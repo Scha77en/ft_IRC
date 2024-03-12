@@ -3,6 +3,9 @@
 #include <sys/poll.h>
 #include <sys/socket.h>
 #include <unistd.h>
+#include <cstdlib>
+#include <cstring>
+#include <cstdio>
 
 #define MAX_CLIENTS SOMAXCONN
 
@@ -110,7 +113,7 @@ void Manage::handleClient(int index) {
   ssize_t re = recv(fds[index].fd, buffer, sizeof(buffer) - 1, 0);
   write(1, buffer, re);
   if (re == -1) 
-    return (perror("Error reading from client"), (void)0);
+    return (std::perror("Error reading from client"), (void)0);
   if(re == 0)
     return(std::cout << GREEN << "[Client Joined !!]" << RESET << std::endl, deleteClient(index), (void)0);
   std::cout << GREEN "Buffer = " << buffer << std::endl;
