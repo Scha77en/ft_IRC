@@ -100,6 +100,8 @@ void Manage::acceptClient()
   fds[idx].fd = sock;
   fds[idx].revents = 0;
   fds[idx].events = POLLIN;
+  Singleton *X = Singleton::GetInstance();
+  X->AddClient("test", &lstClient[sock]);
   std::cout << GREEN << "[Client Joined !!]" << RESET << std::endl;
 }
 
