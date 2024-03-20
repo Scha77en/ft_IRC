@@ -20,12 +20,19 @@ private:
 	std::string _realname;
 	std::string _nickname;
 	std::vector<std::string> _channels;
-	std::map<std::string, std::string> _userModes;
+	
 
 public:
 	int fd;
 	Client();
 	~Client();
+	Client(int fd);
+	Client(const Client &client);
+	Client &operator=(const Client &client);
+	void setUsername(std::string username);
+	void setRealname(std::string realname);
+	void setNickname(std::string nickname);
+	
 };
 
 #endif

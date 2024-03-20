@@ -6,11 +6,15 @@ OBJDIR 		= .obj
 FILES		= 	Src/Server/Server \
 				Src/Manage/Manage \
 				Src/Client/Client \
+				Src/Channel/Channel \
+				Src/singleton/singleton \
 				Src/main
 
 HEADER		=	Src/Manage/Manage.hpp \
 				Src/Server/Server.hpp \
 				Src/Client/Client.hpp \
+				Src/singleton/singleton.hpp \
+				Src/Channel/Channel.hpp \
 
 SRC			= $(FILES:=.cpp)
 OBJ			= $(addprefix $(OBJDIR)/, $(FILES:=.o))

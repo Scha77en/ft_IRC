@@ -1,8 +1,6 @@
 
 #include "Manage.hpp"
-#include <sys/poll.h>
-#include <sys/socket.h>
-#include <unistd.h>
+#include "../Channel/Channel.hpp"
 
 #define MAX_CLIENTS SOMAXCONN
 
@@ -15,6 +13,8 @@
 #define CYAN "\033[1;36m"
 #define WHITE "\033[1;37m"
 #define RESET "\033[0m"
+
+class Channel;
 
 Manage::Manage(void) {}
 
@@ -104,17 +104,19 @@ void Manage::acceptClient()
 }
 
 void Manage::handleClient(int index) {
+  Singleton *X = Singleton::GetInstance();
+
   std::cout << PURPLE << "handling client with [index] " << index << " [fd] " << fds[index].fd << RESET << std::endl;
   char buffer[1024];
   memset(buffer, 0, sizeof(buffer));
   ssize_t re = recv(fds[index].fd, buffer, sizeof(buffer) - 1, 0);
   write(1, buffer, re);
   if (re == -1) 
-    return (perror("Error reading from client"), (void)0);
+    return (std::perror("Error reading from client"), (void)0);
   if(re == 0)
     return(std::cout << GREEN << "[Client Joined !!]" << RESET << std::endl, deleteClient(index), (void)0);
   std::cout << GREEN "Buffer = " << buffer << std::endl;
-  // get_user_data();
+  X->parce_user_data(buffer);
 }
 
 void Manage::deleteClient(int idx)
