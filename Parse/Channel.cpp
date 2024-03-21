@@ -15,33 +15,11 @@ void Channel::ListUsers(std::string channel, int sockfd)
     }
 }
 
-bool Channel::AlreadyRegister(std::string channel, std::string &user)
-{
-    CHANL::iterator it = channels.find(channel);
-    std::vector<std::string>::iterator Users;
-    for (Users = it->second.begin(); Users != it->second.end();Users++)
-    {
-        bool found = false;
-        std::string Target(*Users);
-        for (size_t i = 0; i < Target.length() && !found; i++)
-        {
-            if (Target[i] != user[i])
-                found = true;
-        }
-        if (found)
-            return (EXIT_SUCCESS);
-    }
-    return (EXIT_FAILURE);
-}
-
-
 void Channel::handleJoin(std::string channel, std::string user) 
 {
     CHANL::iterator it = channels.find(channel);
     if (it != channels.end()) 
     {
-        if (AlreadyRegister(channel, user))
-            return ;
         (*it).second.push_back(user);
         std::cout << user << " joined " << channel << std::endl;
     } 
@@ -50,4 +28,81 @@ void Channel::handleJoin(std::string channel, std::string user)
         channels[channel].push_back(user);
         std::cout << user << " created and joined " << channel << std::endl;
     }
+}
+
+string Channel::GetChannel(int index)
+{
+    int count = 0;
+    CHANL::iterator it;
+
+    for (it = channels.begin(); it != channels.end(); ++it) 
+    {
+        if (count == index)
+            return (it->first);
+        ++count;
+    }
+    return ("");
+}
+
+int Channel::GetChannelIndex(const string &Ch)
+{
+    int index = 0;
+    CHANL::iterator it;
+
+    for (it = channels.begin(); it != channels.end(); ++it) 
+    {
+        if (it->first == Ch)
+            return index;
+        ++index;
+    }
+    return -1;
+}
+
+void Channel::DispalyInChannel(int NewClientSocket, string MSG, DataBase &info, string channel)
+{
+    CHANL::iterator it = channels.find(channel);
+
+    if (it != channels.end())
+    {
+        string output;
+        std::stringstream Respond;   
+        std::vector<std::string>::iterator Users;
+
+        for (Users = it->second.begin(); Users != it->second.end();Users++)
+        {
+            int ClientSK = info.UserSocket(*Users);
+
+            if (ClientSK != -1)
+            {
+                Respond.str("");
+                Respond << GREEN << "@" + info.FindUser(NewClientSocket) << BLUE << " => "  << MSG << RESET;
+                output = Respond.str();
+                send(ClientSK, output.c_str(), output.length(), 0);
+            }
+        }
+    }
+}
+
+void Channel::PromptMSG(string channel, string user, int NewClientSocket)
+{
+    std::stringstream Respond;
+    std::string output;
+
+    Respond.str("");
+    Respond << BLUE << "(" + channel + ") " << GREEN << "@" + user << BLUE << "[Message] : " << RESET;
+    output = Respond.str();
+    send(NewClientSocket, output.c_str(), output.length(), 0);
+}
+
+string Channel::SendMS(string channel, string user, int NewClientSocket)
+{
+
+    int ReadByte;
+    char BUFFER[XBUFFER_SIZE];
+
+    ReadByte = recv(NewClientSocket, BUFFER, XBUFFER_SIZE, 0);
+    BUFFER[ReadByte] = '\0';
+    std::string MSG(BUFFER, ReadByte);
+    ChannelMsg[GetChannelIndex(channel)].push_back(std::make_pair("@" + user, MSG));
+    return (MSG);
 }

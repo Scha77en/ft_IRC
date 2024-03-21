@@ -6,6 +6,13 @@ void extractCommandAndChannel(const char* buffer, std::string& command, std::str
     ss >> command >> channel;
 }
 
+void Server::ChannelCommunication(int NewClientSocket, string channel, string user)
+{
+    string MSG = Obj.SendMS(channel, user, NewClientSocket);
+    
+    Obj.DispalyInChannel(NewClientSocket, MSG, informations, channel);
+}
+
 void Server::ChannelOperations(int NewClientSocket, const char *xbuffer)
 {
     std::string command;
@@ -14,8 +21,17 @@ void Server::ChannelOperations(int NewClientSocket, const char *xbuffer)
     extractCommandAndChannel(xbuffer, command, channel);
     if (command == "JOIN")
     {
+        this->informations.UpdateUserChannel(NewClientSocket, channel);
+
+        // bool isRegister = 
+        //if (!isRegister)
+          //  return ;
         this->Obj.handleJoin(channel, informations.FindUser(NewClientSocket));
-        this->Obj.ListUsers(channel, NewClientSocket);
+        
+        this->informations.SetConnection(NewClientSocket, TRUE);
+
+        this->informations.ActiveInChannel(Obj.GetChannelIndex(channel), NewClientSocket);
+        //this->Obj.ListUsers(channel, NewClientSocket);
     }
 }
 
@@ -29,27 +45,6 @@ bool AcceptOrReject(const char *BUFFER, int ReadByte)
             return FALSE;
     }
     return TRUE;
-}
-
-// Checking The Bad Input, (!!! it Should return the Recv Buffer if ReadByte != 0)
-void Server::BadInput(int NewClientSocket, int ReadByte)
-{
-    char BUFFER[BUFFER_SIZE];
-
-    // if You Want You Can Handel More ! (Invalid Character or Anything)
-    if (ReadByte < 0)
-    {
-        std::stringstream Respond;
-        Respond.str("");
-        Respond << RED << "\n[Invalid Input]\n" << RESET;
-        std::string output = Respond.str();
-        send(NewClientSocket, output.c_str(), output.length(), 0);
-        ReadByte = recv(NewClientSocket, BUFFER, BUFFER_SIZE, 0);
-        if (ReadByte < 0)
-            this->BadInput(NewClientSocket, ReadByte);
-        else
-            std::cout << "Return The RECV HERE !" << std::endl;
-    }
 }
 
 void removeNewlines(std::string &str) 
@@ -72,11 +67,12 @@ void Server::LoginInformation(int NewClientSocket)
     std::string output = Respond.str();
     send(NewClientSocket, output.c_str(), output.length(), 0);
     ReadByte = recv(NewClientSocket, BUFFER, BUFFER_SIZE, 0);
-    this->BadInput(NewClientSocket, ReadByte);
+    //this->BadInput(NewClientSocket, ReadByte);
     BUFFER[ReadByte] = '\0';
     std::string NAME(BUFFER, ReadByte);
-    removeNewlines(NAME);
-    this->informations.UserAddInformation(i++, 0, NewClientSocket, NAME);
+    //removeNewlines(NAME);
+
+    this->informations.UserAddInformation(i++, NewClientSocket, NAME);
 
     Respond.str("");
     Respond << GREEN << "\nWelcome Back " << "@" + NAME << std::endl;
@@ -117,6 +113,7 @@ bool Server::ProcessClient()
 		}
 
         Active = select( Big_socketFD + 1 , &readfds , NULL , NULL , NULL); 
+        
         if (Active < 0)
         {
             std::cerr << "select function error !" << std::endl;
@@ -133,14 +130,16 @@ bool Server::ProcessClient()
             }
             std::cout << GREEN << "[*] New connection Detected !" << std::endl;
             std::cout << RESET << "Information => Client Socket : " << NewClientSocket << " IP : " << inet_ntoa(server_addr.sin_addr) << " PORT : " << ntohs(server_addr.sin_port)<< std::endl;
-            
+            /*
             std::stringstream Respond;
             Respond.str("");
             Respond << BLUE << "\n[Authentication Required !]\n\n" << RESET << "ENTER THE KEY : ";
             std::string output = Respond.str();
             send(NewClientSocket, output.c_str(), output.length(), 0);
             ReadByte = recv(NewClientSocket, BUFFER, BUFFER_SIZE, 0);
-            if (AcceptOrReject(BUFFER, ReadByte))
+            */
+            //if (AcceptOrReject(BUFFER, ReadByte))
+            if (true)
             {
                 for (int i = 0; i < MAX_CL; i++) 
 			    { 
@@ -152,6 +151,7 @@ bool Server::ProcessClient()
 			    }
                 LoginInformation(NewClientSocket);
             }
+            /*
             else
             {
                 Respond.str("");
@@ -160,20 +160,34 @@ bool Server::ProcessClient()
                 send(NewClientSocket, output.c_str(), output.length(), 0);
                 close(NewClientSocket);
             }
+            */
 
         }
         for (int i = 0; i < MAX_CL; i++) 
 		{ 
-			sd = client_socket[i]; 
-				
-			if (FD_ISSET( sd , &readfds)) 
+			sd = client_socket[i];
+            if (informations.IsOnline(sd))
+            {
+                int Ichannel = informations.InChannelID(sd);
+                string channel = Obj.GetChannel(Ichannel);
+
+                string user = informations.FindUser(sd);
+
+                if (FD_ISSET( sd , &readfds))
+                {
+                    ChannelCommunication(sd, channel, user);
+
+                    Obj.PromptMSG(channel, user, sd);
+                }
+            }
+			else if (FD_ISSET( sd , &readfds)) 
 			{
-                (void)ReadByte;
-				ReadByte = recv(sd, BUFFER, BUFFER_SIZE, 0);
+                ReadByte = recv(sd, BUFFER, BUFFER_SIZE, 0);
                 std::cout << "Received: " << BUFFER << std::endl;
+                BUFFER[ReadByte] = '\0';
                 ChannelOperations(sd, BUFFER);
-                send(sd, BUFFER, 0, 0);
-			} 
+                continue;
+			}
 		} 
     }
     return EXIT_SUCCESS;
@@ -192,7 +206,11 @@ bool Server::ServerCreate()
         return EXIT_FAILURE;
     }
 
+    int opt = 1;
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+                                                  &opt, sizeof(opt));
     //type of socket created 
+
 	server_addr.sin_family = AF_INET; 
 	server_addr.sin_addr.s_addr = INADDR_ANY; 
 	server_addr.sin_port = htons(PORT);

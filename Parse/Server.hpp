@@ -15,7 +15,7 @@
 #define TRUE 1
 #define FALSE 0
 
-const int PORT = 8080;
+const int PORT = 5555;
 const int BUFFER_SIZE = 1024;
 
 class Server
@@ -30,6 +30,7 @@ class Server
         void LoginInformation(int NewClientSocket);
         void BadInput(int NewClientSocket, int ReadByte);
         void ChannelOperations(int NewClientSocket, const char *xbuffer);
+        void ChannelCommunication(int NewClientSocket, string channel, string user);
 
     private:
 
@@ -37,6 +38,7 @@ class Server
         DataBase informations;
 
         fd_set readfds;
+        
         socklen_t addrlen;
         struct sockaddr_in server_addr;
 
