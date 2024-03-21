@@ -58,6 +58,13 @@ int Channel::GetChannelIndex(const string &Ch)
     return -1;
 }
 
+void removeNewlines(std::string &str) 
+{
+    size_t pos = 0;
+    while ((pos = str.find('\n', pos)) != std::string::npos)
+        str.erase(pos, 1);
+}
+
 void Channel::DispalyInChannel(int NewClientSocket, string MSG, DataBase &info, string channel)
 {
     CHANL::iterator it = channels.find(channel);
@@ -75,8 +82,11 @@ void Channel::DispalyInChannel(int NewClientSocket, string MSG, DataBase &info, 
             if (ClientSK != -1)
             {
                 Respond.str("");
-                Respond << GREEN << "@" + info.FindUser(NewClientSocket) << BLUE << " => "  << MSG << RESET;
+                string user = info.FindUser(NewClientSocket);
+                removeNewlines(user);
+                Respond << GREEN << "@" +  user << BLUE << " : "  << MSG << RESET;
                 output = Respond.str();
+                //removeNewlines(output); 
                 send(ClientSK, output.c_str(), output.length(), 0);
             }
         }
@@ -85,12 +95,13 @@ void Channel::DispalyInChannel(int NewClientSocket, string MSG, DataBase &info, 
 
 void Channel::PromptMSG(string channel, string user, int NewClientSocket)
 {
-    std::stringstream Respond;
     std::string output;
+    std::stringstream Respond;
 
     Respond.str("");
-    Respond << BLUE << "(" + channel + ") " << GREEN << "@" + user << BLUE << "[Message] : " << RESET;
+    Respond << BLUE << "(" + channel + ") " << GREEN << "@" + user << BLUE << " - [Message] : " << RESET;
     output = Respond.str();
+    removeNewlines(output); 
     send(NewClientSocket, output.c_str(), output.length(), 0);
 }
 

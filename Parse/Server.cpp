@@ -9,7 +9,9 @@ void extractCommandAndChannel(const char* buffer, std::string& command, std::str
 void Server::ChannelCommunication(int NewClientSocket, string channel, string user)
 {
     string MSG = Obj.SendMS(channel, user, NewClientSocket);
-    
+    string output;
+    std::stringstream Respond;
+ 
     Obj.DispalyInChannel(NewClientSocket, MSG, informations, channel);
 }
 
@@ -19,7 +21,7 @@ void Server::ChannelOperations(int NewClientSocket, const char *xbuffer)
     std::string channel;
 
     extractCommandAndChannel(xbuffer, command, channel);
-    if (command == "JOIN")
+    if (command == "J")
     {
         this->informations.UpdateUserChannel(NewClientSocket, channel);
 
@@ -45,13 +47,6 @@ bool AcceptOrReject(const char *BUFFER, int ReadByte)
             return FALSE;
     }
     return TRUE;
-}
-
-void removeNewlines(std::string &str) 
-{
-    size_t pos = 0;
-    while ((pos = str.find('\n', pos)) != std::string::npos)
-        str.erase(pos, 1);
 }
 
 // Process User Information in Order To Create A DataBase For Client
@@ -170,15 +165,9 @@ bool Server::ProcessClient()
             {
                 int Ichannel = informations.InChannelID(sd);
                 string channel = Obj.GetChannel(Ichannel);
-
                 string user = informations.FindUser(sd);
-
                 if (FD_ISSET( sd , &readfds))
-                {
                     ChannelCommunication(sd, channel, user);
-
-                    Obj.PromptMSG(channel, user, sd);
-                }
             }
 			else if (FD_ISSET( sd , &readfds)) 
 			{
@@ -186,8 +175,17 @@ bool Server::ProcessClient()
                 std::cout << "Received: " << BUFFER << std::endl;
                 BUFFER[ReadByte] = '\0';
                 ChannelOperations(sd, BUFFER);
-                continue;
+
 			}
+            /*
+            if (informations.IsOnline(sd))
+            {
+                int Ichannel = informations.InChannelID(sd);
+                string channel = Obj.GetChannel(Ichannel);
+                string user = informations.FindUser(sd);
+                Obj.PromptMSG(channel, user, sd);
+            }
+            */
 		} 
     }
     return EXIT_SUCCESS;
