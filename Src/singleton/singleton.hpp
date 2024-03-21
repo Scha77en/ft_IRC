@@ -21,6 +21,7 @@
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <strings.h>
+#include <cstring>
 #include <map>
 
 class Client;

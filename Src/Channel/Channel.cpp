@@ -22,6 +22,7 @@ Channel::~Channel()
 }
 
 void Channel::parce_user_data(char buffer[1024])
+
 {
 	Channel channel;
 	if (std::strncmp(buffer, "TOPIC", 5) == 0)

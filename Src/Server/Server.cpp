@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include <cstdlib>
 
 Server::Server() {}
 Server::~Server() {}
