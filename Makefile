@@ -4,7 +4,7 @@ CPP = c++
 
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
-HEADER_P = Parse/Server.hpp Parse/Channel.hpp Parse/Database.hpp
+HEADER_P = Parse/Server.hpp Parse/Channel.hpp Parse/Database.hpp Parse/Client.hpp
 
 # Directories
 SRCDIR = Parse

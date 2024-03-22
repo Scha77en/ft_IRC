@@ -3,8 +3,9 @@
 
 int main(void)
 {
-    Server server;
-    server.ServerCreate();
+    Server *Service = Server::getInstance();
+
+    Service->ServerCreate();
     
     return EXIT_SUCCESS;
 }

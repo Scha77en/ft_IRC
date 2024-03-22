@@ -12,8 +12,6 @@
 #include <sys/socket.h>
 #include <utility> 
 
-#include "Database.hpp"
-
 #define BLACK "\033[1;30m"
 #define RED "\033[1;31m"
 #define GREEN "\033[1;32m"
@@ -24,6 +22,55 @@
 #define WHITE "\033[1;37m"
 #define RESET "\033[0m"
 
+typedef std::vector<std::string> Container;
+
+class Channel 
+{
+	private:
+		std::string _key;
+		std::string _name;
+		std::string _topic;
+
+		Container _members;
+		Container _admins;
+		Container _invited;
+
+		int _limit;
+
+		bool _invite_only;
+		bool _protectedTopic;
+
+	public:
+
+		Channel();
+		~Channel();
+
+        /*
+		void parce_user_data(char buffer[1024]);
+		void handleTopic(char buffer[1024]);
+		// void	handleJoin(char buffer[1024]);
+
+		void addMember(std::string member);
+		std::string getTopic();
+		void setTopic(std::string topic);
+		std::string getName();
+		void setName(std::string name);
+
+		void setUserLimit(int limit);
+		int getUserLimit(void);
+		// void	setUserMode(std::string mode);
+		void setKey(std::string key);
+		std::string getKey(void);
+		void setInviteOnly(bool invite_only);
+		bool isInviteOnly();
+		void setProtectedTopic(bool protectedTopic);
+		bool isProtectedTopic();
+        */
+};
+
+#endif
+
+/*
 #define MAX_CHANNEL 20
 #define MAX_CL 30
 
@@ -66,3 +113,4 @@ class Channel
 };
 
 #endif
+*/

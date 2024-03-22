@@ -1,5 +1,235 @@
 #include "Database.hpp"
 
+Database* Database::DB = undefine;
+
+Database	*Database::GetInstance()
+{
+	if (DB == undefine)
+		DB = new Database();
+	return DB;
+}
+
+void Database::AddClient(const std::string& name)
+{
+    Client* client = new Client();
+	clients[name] = client;
+}
+
+Client* Database::GetClient(const std::string& name)
+{
+	return clients[name];
+}
+
+void GetCommand(const char* buffer, std::string& command, std::string& channel) 
+{
+    std::stringstream ss(buffer);
+    ss >> command >> channel;
+}
+
+void RemoveNewLine(string &str)
+{
+    size_t pos = 0;
+    while ((pos = str.find('\n', pos)) != std::string::npos)
+        str.erase(pos, 1);
+}
+
+void Database::DisplayMessages(string data, string name, string username)
+{
+    string output;
+    std::stringstream Respond;
+
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->second->ChannelList(name))
+        {
+            int socket = it->second->GetSocket();
+            if (socket > undefine)
+            {
+                Respond << BLUE << "@" + username << GREEN << " [" << name << "] : " << RESET << data << std::endl;
+                output = Respond.str();
+                send(socket, output.c_str(), output.length(), 0);
+            }
+        }
+    }
+}
+
+void Database::StartCommunication(int UserSocket, string data)
+{
+    string output;
+    std::stringstream Respond;
+
+    Database *service = Database::GetInstance();
+    string username = service->GetUserBySocket(UserSocket);
+    Client *user = service->GetClient(username);
+    string name = user->GetChannelName(user->GetChannelID()); 
+
+    service->DisplayMessages(data, name, username);
+
+    //std::cout << "Connected : " << username  << " to " << name << std::endl;
+    //send(UserSocket, 0, 0, 0);
+}
+
+void Database::ParseUserInput(string data, int UserSocket)
+{
+    string args;
+    string command;
+
+    GetCommand(data.c_str(), command, args);
+
+	Database *service = Database::GetInstance();
+    string username = service->GetUserBySocket(UserSocket);
+    Client *user = service->GetClient(username);
+
+    if (user->GetConnection())
+        service->StartCommunication(UserSocket, data);
+    else if (command == "J")
+    {
+        std::cout << "command : [" << command << "] args : [" << args << "]" << std::endl;
+        service->AddChannel(args, new Channel());
+        string username = service->GetUserBySocket(UserSocket);
+        Client *user = service->GetClient(username);
+        user->SetConnection(TRUE);
+        user->SaveChannel(args);
+        user->ActiveInChannel(args);
+
+        string welcome = "Welcome @" + username + " to " + args + "\n";
+        send(UserSocket, welcome.c_str(), welcome.length(), 0);
+    }
+}
+
+void Database::AddChannel(const std::string& name, Channel* channel)
+{
+	channels[name] = channel;
+	//PrintChannels();
+}
+
+void Database::PrintChannels() 
+{
+    std::cout << "Channels:" << std::endl;
+    for (SYSTEM_CHANNEL::const_iterator it = channels.begin(); it != channels.end(); ++it) 
+        std::cout << it->first << std::endl;
+}
+
+string Database::GetUserBySocket(int UserSocket)
+{
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->second->GetSocket() == UserSocket)
+            return it->first;
+    }
+    return (undefine);
+}
+
+/*
+
+void Database::RemoveChannel(const std::string& name)
+{
+	channels.erase(name);
+}
+
+Channel* Database::GetChannel(const std::string& name)
+{
+	return channels[name];
+}
+
+void Database::RemoveClient(const std::string& name)
+{
+	clients.erase(name);
+}
+
+Database::~Database()
+{
+	delete Database_;
+}
+
+void Database::parce_user_data(char buffer[1024])
+{
+	Database *sing = Database::GetInstance();
+	if (std::strncmp(buffer, "TOPIC", 5) == 0)
+	{
+		std::cout << "TOPIC HAS BEEN ENCOUNTERED" << std::endl;
+		sing->handleTopic(buffer);
+	}
+	else if (std::strncmp(buffer, "JOIN", 4) == 0)
+	{
+		std::cout << "JOIN HAS BEEN ENCOUNTERED" << std::endl;
+		sing->AddChannel(buffer + 5, new Channel());
+	}
+	else if (std::strncmp(buffer, "MODE", 4) == 0)
+	{
+		sing->handleMode(buffer);
+	}
+}
+
+void Database::handleTopic(char buffer[1024])
+{
+	std::string name = buffer + 6;
+	std::cout << "HANDLING TOPIC " << name << std::endl;
+	std::string channelName = name.substr(0, name.find(' '));
+	std::string topic = name.substr(name.find(' ') + 1);
+	std::cout << "Channel Name = " << channelName << std::endl;
+	std::cout << "Topic = " << topic << std::endl;
+	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
+	if (it != channels.end())
+	{
+		std::cout << YELLOW "Topic to set : " << topic << std::endl;
+		it->second->setTopic(topic);
+		std::cout << YELLOW "TOPIC IS SET = " << it->second->getTopic() << GREEN << std::endl;
+	}
+	else
+	{
+		std::cout << RED "CHANNEL NOT FOUND" << GREEN << std::endl;
+	}
+	// Channel *channel = channels[channelName];
+	// channel->setTopic(topic);
+	// std::cout << YELLOW "TOPIC IS SET = " << channel->getTopic() << GREEN << std::endl;
+}
+
+void	Database::handleMode(char buffer[1024])
+{
+	bool addMode = true;
+
+	std::string data = buffer + 5;
+	std::string channelName = data.substr(0, data.find(' '));
+	std::string mode = data.substr(data.find(' ') + 1);
+	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
+	
+	for (size_t i = 0; i < mode.size(); i++) {
+		char c = mode[i];
+		if (c == '+' || c == '-') {
+			addMode = (c == '+');
+		}
+		else {
+			applyModeChange(c, addMode, it->second);
+		}
+	}
+}
+
+void	Database::applyModeChange(char mode, bool addMode, Channel *channel)
+{
+	switch (mode) {
+		case 'i':
+			channel->setInviteOnly(addMode);
+			break;
+		case 't':
+			channel->setProtectedTopic(addMode);
+			break;
+		case 'l':
+			channel->setUserLimit(10);
+			break;
+		case 'k':
+			channel->setKey("test");
+			break;
+		case 'o':
+			std::cout << "Operator" << std::endl;
+			break;
+		default:
+			break;
+	}
+}
+*/
+
+/*
 DataBase::DataBase() {}
 
 DataBase::~DataBase() {}
@@ -84,3 +314,4 @@ void DataBase::UserAddInformation(int ID, int Socket, string Name)
     users[ID].online = FALSE;
     users[ID].CurrentChannel = 0;
 }
+*/

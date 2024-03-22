@@ -1,5 +1,9 @@
 #include "Channel.hpp"
 
+Channel::Channel() {}
+Channel::~Channel() {}
+
+/*
 void Channel::ListUsers(std::string channel, int sockfd)
 {
     CHANL::iterator it = channels.find(channel);
@@ -117,3 +121,4 @@ string Channel::SendMS(string channel, string user, int NewClientSocket)
     ChannelMsg[GetChannelIndex(channel)].push_back(std::make_pair("@" + user, MSG));
     return (MSG);
 }
+*/
