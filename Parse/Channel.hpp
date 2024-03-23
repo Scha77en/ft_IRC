@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <arpa/inet.h>
 #include <sstream>
+#include <algorithm>
 #include <sys/socket.h>
 #include <utility> 
 
@@ -42,15 +43,27 @@ class Channel
 
 	public:
 
-		Channel();
 		~Channel();
+		Channel(std::string name, std::string key);
+
+		bool FirstCreation(void);
+
+		std::string GetSecretKey();
+	
+		void addMember(std::string member);
+		void MembertoAdmin(std::string member);
+		void addAdmin(std::string member);
+
+
+
+
+
 
         /*
 		void parce_user_data(char buffer[1024]);
 		void handleTopic(char buffer[1024]);
 		// void	handleJoin(char buffer[1024]);
 
-		void addMember(std::string member);
 		std::string getTopic();
 		void setTopic(std::string topic);
 		std::string getName();

@@ -27,8 +27,9 @@ class Channel;
 const int xBUFFER_SIZE = 1024;
 
 typedef std::string string;
-typedef std::map<std::string, Channel* > SYSTEM_CHANNEL;
 typedef std::map<std::string, Client* > SYSTEM_CLIENT;
+typedef std::map<std::string, Channel* > SYSTEM_CHANNEL;
+typedef std::vector<std::pair<std::string, std::string> > SYSTEM_KEYVAL;
 
 
 class Database
@@ -55,9 +56,13 @@ class Database
 		void    AddClient(const std::string& name);
         void    ParseUserInput(string data, int UserSocket);
         void    DisplayMessages(int UserSocket, string data);
+        void    ListUsersChannels(string data, int UserSocket);
         void    StartCommunication(int UserSocket, string data);
+        void    HandelMultiChannel(string data, int UserSocket);
 		void    AddChannel(const std::string& name, Channel* channel);
         void    DisplayMessages(string data, string name, string username);
+        void    NoticeUserHasJoined(string name, string username);
+        void    NoticeUserLogout(string name, string username);
 
         Client* GetClient(const std::string& name);
 		Channel* GetChannel(const std::string& name);

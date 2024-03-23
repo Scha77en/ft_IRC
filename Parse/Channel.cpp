@@ -1,7 +1,45 @@
 #include "Channel.hpp"
 
-Channel::Channel() {}
 Channel::~Channel() {}
+
+Channel::Channel(std::string name, std::string key) 
+{
+	this->_name = name;
+    this->_key = key;
+}
+
+void Channel::addMember(std::string member)
+{
+    _members.push_back(member);
+}
+
+void Channel::MembertoAdmin(std::string member)
+{
+    Container::iterator it = std::find(_members.begin(), _members.end(), member);
+
+    if (it != _members.end()) 
+    {
+        _admins.push_back(*it);
+        _members.erase(it);
+    }
+}
+
+std::string Channel::GetSecretKey()
+{
+    return this->_key;
+}
+
+void Channel::addAdmin(std::string member)
+{
+    _admins.push_back(member);
+}
+
+bool Channel::FirstCreation(void)
+{
+    if (_members.size() == 0)
+        return (1);
+    return (0);
+}
 
 /*
 void Channel::ListUsers(std::string channel, int sockfd)

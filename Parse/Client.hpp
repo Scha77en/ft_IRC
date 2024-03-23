@@ -9,6 +9,7 @@
 #include <iostream>
 #include <netinet/in.h>
 #include <strings.h>
+#include <algorithm>
 #include <map>
 
 #define undefine 0
@@ -45,6 +46,7 @@ class Client
 	    void setUsername(std::string username);
         void SetConnection(bool status);
         void ActiveInChannel(std::string name);
+        void ChannelLogout(std::string name);
 
 };
 

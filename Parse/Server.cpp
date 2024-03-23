@@ -57,7 +57,7 @@ void Server::StartSession()
         {
             
             int bytes_received = recv(fds[i].fd, BUFFER, BUFFER_SIZE - 1, 0);
-            if (bytes_received > 0) 
+            if (bytes_received > 0)
             {
                 BUFFER[bytes_received] = '\0';
                 string Received(BUFFER);
@@ -96,7 +96,6 @@ bool Server::ProcessClient()
     while (true) 
     {
         int num_ready = poll(fds, MAX_CLIENTS, -1);
-        
         if (num_ready <= 0)
             continue;
 
@@ -116,7 +115,6 @@ bool Server::ProcessClient()
                     break;
                 }
             }
-
             if (empty_slot == -1)
             {
                 close(NewClientSocket);
