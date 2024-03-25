@@ -36,7 +36,7 @@ bool Server::ProccessUserData(int NewClientSocket)
 
     std::stringstream Respond;
 
-    Respond << GREEN << "\nWelcome Back " << "@" + Received << std::endl;
+    Respond << GREEN << "\nWelcome Back " << "@" + Received << RESET << std::endl;
     string output = Respond.str();
     send(NewClientSocket, output.c_str(), output.length(), 0);
 

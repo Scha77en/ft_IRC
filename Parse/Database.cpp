@@ -153,6 +153,25 @@ SYSTEM_KEYVAL parseChannels(string &input)
     return result;
 }
 
+bool Protection(string data)
+{
+    int count = 0, i = 0;
+
+    while (data[i])
+    {
+        if (data[i] == ' ')
+            count++;
+        i++;
+    }
+    return (count == i);
+}
+
+bool Potection403(string data)
+{
+    size_t position = data.find('#');
+    return (position == std::string::npos);
+}
+
 void Database::HandelMultiChannel(string data, int UserSocket)
 {
     string args;
@@ -169,31 +188,65 @@ void Database::HandelMultiChannel(string data, int UserSocket)
 
     if (colonPos != std::string::npos)
         args = data.substr(colonPos + 1);
+    if (Protection(args) || args.empty())
+    {
+        Respond.str("");
+        Respond << "(461)" << BLUE << " @" + username << " JOIN :" << RED << "Not enough parameters " << RESET << std::endl;
+        output = Respond.str();
+        send(UserSocket, output.c_str(), output.length(), 0);
+        return ;
+    }
+    /*
+    if (Potection403(args))
+    {
+        Respond.str("");
+        Respond << "(403)" << BLUE << " @" + username <<  " " + args << RED << " :No such channel " << RESET << std::endl;
+        output = Respond.str();
+        send(UserSocket, output.c_str(), output.length(), 0);
+        return ;
+    }
+    */
     // else send error msg in client socket
 
     SYSTEM_KEYVAL channels = parseChannels(args);
     for (it = channels.begin(); it != channels.end();it++)
     {
         Channel *channel = service->GetChannel(it->first);
-        if (channel != undefine && channel->GetSecretKey() != it->second)
+        if (channel != undefine)
         {
-            Respond.str("");
-            Respond << BLUE << it->first << RED << " is Protected ! " << RESET << std::endl;
-            output = Respond.str();
-            send(UserSocket, output.c_str(), output.length(), 0);
-            continue;
+            if (channel->GetSecretKey() != it->second)
+            {
+                Respond.str("");
+                Respond << BLUE << it->first << RED << " is Protected ! " << RESET << std::endl;
+                output = Respond.str();
+                send(UserSocket, output.c_str(), output.length(), 0);
+                continue;
+            }
         }
-        channel = new Channel(it->first, it->second);
+        if (channel == undefine)
+        {
+            channel = new Channel(it->first, it->second);
+            service->AddChannel(it->first, channel);
+        }
         user->SetConnection(TRUE);
         user->SaveChannel(it->first);
         user->ActiveInChannel(it->first);
-        service->AddChannel(it->first, channel);
         if (channel->FirstCreation())
             channel->addAdmin(username);
         else
             channel->addMember(username);
         NoticeUserHasJoined(it->first, username);
     }
+}
+
+void Protection421(string command, int UserSocket, string username)
+{
+    string output;
+    std::stringstream Respond;
+
+    Respond << "(421)" << BLUE << " @" + username <<  " " + command << RED << " :Unknown command " << RESET << std::endl;
+    output = Respond.str();
+    send(UserSocket, output.c_str(), output.length(), 0);
 }
 
 void Database::ParseUserInput(string data, int UserSocket)
@@ -209,14 +262,16 @@ void Database::ParseUserInput(string data, int UserSocket)
 
     if (user->GetConnection())
         service->StartCommunication(UserSocket, data);
-    else if (command == "J")
+    else if (command == "JOIN")
         HandelMultiChannel(data, UserSocket);
+    else
+        Protection421(command, UserSocket, username);
 }
 
 void Database::AddChannel(const std::string& name, Channel* channel)
 {
 	channels[name] = channel;
-	PrintChannels();
+	//PrintChannels();
 }
 
 void Database::PrintChannels() 

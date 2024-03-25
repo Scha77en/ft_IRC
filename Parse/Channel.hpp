@@ -34,12 +34,12 @@ class Channel
 
 		Container _members;
 		Container _admins;
-		Container _invited;
+		//Container _invited;
 
-		int _limit;
+		//int _limit;
 
-		bool _invite_only;
-		bool _protectedTopic;
+		//bool _invite_only;
+		//bool _protectedTopic;
 
 	public:
 
