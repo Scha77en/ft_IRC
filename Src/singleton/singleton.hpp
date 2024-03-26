@@ -6,7 +6,7 @@
 /*   By: aouhbi <aouhbi@student.42.fr>              +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2024/03/17 21:28:07 by aouhbi            #+#    #+#             */
-/*   Updated: 2024/03/20 09:49:16 by aouhbi           ###   ########.fr       */
+/*   Updated: 2024/03/24 03:22:11 by aouhbi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -22,6 +22,9 @@
 #include <netinet/in.h>
 #include <strings.h>
 #include <map>
+
+
+#define MAX_CL 30
 
 class Client;
 class Channel;
@@ -42,12 +45,13 @@ class Singleton
 
 		Client *client_;
 		Channel *channel_;
+		struct pollfd fds[MAX_CL];
 	
 	public:
 
 		static Singleton *GetInstance(void);
 		~Singleton();
-		
+
 		void AddChannel(const std::string& name, Channel* channel);
 		void RemoveChannel(const std::string& name);
 		Channel* GetChannel(const std::string& name);

@@ -18,7 +18,7 @@ Client::Client(const Client &client) {
 Client &Client::operator=(const Client &client) {
 	this->fd = client.fd;
 	this->_username = client._username;
-	this->_realname = client._realname;
+	this->key = client.key;
 	this->_nickname = client._nickname;
 	this->_channels = client._channels;
 	return *this;
@@ -29,7 +29,7 @@ void Client::setUsername(std::string username) {
 }
 
 void Client::setRealname(std::string realname) {
-	this->_realname = realname;
+	this->key = realname;
 }
 
 void Client::setNickname(std::string nickname) {

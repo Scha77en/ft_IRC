@@ -82,7 +82,7 @@ void Manage::loop()
         {
           std::cout << "hnaaa!!" << std::endl;
           deleteClient(i);
-        }
+        } 
       }
     }
   }
