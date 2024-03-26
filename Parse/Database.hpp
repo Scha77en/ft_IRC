@@ -27,8 +27,11 @@ class Channel;
 const int xBUFFER_SIZE = 1024;
 
 typedef std::string string;
+typedef std::vector<std::string> STORE;
+
 typedef std::map<std::string, Client* > SYSTEM_CLIENT;
 typedef std::map<std::string, Channel* > SYSTEM_CHANNEL;
+
 typedef std::vector<std::pair<std::string, std::string> > SYSTEM_KEYVAL;
 
 
@@ -61,14 +64,18 @@ class Database
         void    HandelMultiChannel(string data, int UserSocket);
 		void    AddChannel(const std::string& name, Channel* channel);
         void    DisplayMessages(string data, string name, string username);
-        void    NoticeUserHasJoined(string name, string username);
+        void 	NoticeUserHasJoined(string name, string username, int UserSocket);
         void    NoticeUserLogout(string name, string username);
+		void 	PRIVMessages(string data, string name, string username);
 
         Client* GetClient(const std::string& name);
 		Channel* GetChannel(const std::string& name);
 
         string GetUserBySocket(int UserSocket);
 
+		int GetUserSocket(string name);
+
+	
 		//void RemoveChannel(const std::string& name);
 
 		//void RemoveClient(const std::string& name);
@@ -85,47 +92,4 @@ class Database
 };
 
 #endif
-
-
-/*
-
-struct Client_Structure
-{
-    string name;
-    string ChannelID[MAX_CHANNEL];
-
-    int id;
-    int socket;
-    int CurrentChannel;
-    int Permission[MAX_CHANNEL];
-
-    bool online;
-};
-
-class DataBase
-{
-    public:
-        DataBase();
-        ~DataBase();
-
-        bool IsOnline(int NewClientSocket);
-    
-        int UserSocket(string username);
-        int UserIndex(int NewClientSocket);
-        int InChannelID(int NewClientSocket);
-
-        string FindUser(int NewClientSocket);
-
-        void ActiveInChannel(int index, int NewClientSocket);
-        void SetConnection(int NewClientSocket, bool status);
-        void UserAddInformation(int ID, int Socket, string Name);
-
-        bool UpdateUserChannel(int NewClientSocket, string &channel);
-    
-    private:
-        Client_Structure users[MAX_CL];
-};
-
-#endif
-*/
 

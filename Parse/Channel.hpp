@@ -49,10 +49,12 @@ class Channel
 		bool FirstCreation(void);
 
 		std::string GetSecretKey();
+		std::string ChannelName(void);
 	
 		void addMember(std::string member);
 		void MembertoAdmin(std::string member);
 		void addAdmin(std::string member);
+		void UsersInChannel(int Sokect, std::string username);
 
 
 
@@ -82,48 +84,3 @@ class Channel
 };
 
 #endif
-
-/*
-#define MAX_CHANNEL 20
-#define MAX_CL 30
-
-const int XBUFFER_SIZE = 1024;
-
-typedef std::string string;
-typedef std::vector<std::pair<string, string> > MSG;
-typedef std::map<std::string, std::vector<std::string> > CHANL;
-
-class Channel 
-{
-
-    private:
-
-        CHANL channels;
-        
-        MSG ChannelMsg[MAX_CHANNEL];
-
-    public:
-
-        //Channel();
-        //~Channel();
-
-        // KICK JOIN INVITE
-        void handleJoin(std::string channel, std::string user);
-        //void handleInvite(std::string channel, std::string user);
-        //void handleKick(std::string channel, std::string user);
-
-        string GetChannel(int index);
-
-        void DisplayMS(string &channel, string &user);
-        string SendMS(string channel, string user, int NewClientSocket);
-        void DispalyInChannel(int NewClientSocket, string MSG, DataBase &info, string channel);
-        void PromptMSG(string channel, string user, int NewClientSocket);
-
-        int GetChannelIndex(const string &Ch);
-        void ListUsers(std::string channel, int sockfd);
-        bool AlreadyRegister(std::string channel, std::string &user);
-
-};
-
-#endif
-*/

@@ -63,7 +63,7 @@ void Database::DisplayMessages(string data, string name, string username)
             if (socket > undefine)
             {
                 Respond.str("");
-                Respond << BLUE << "@" + username << GREEN << " [" << name << "] : " << RESET << data << std::endl;
+                Respond << BLUE << "@" + username << GREEN << " [" << name << "] :" << RESET << data << std::endl;
                 output = Respond.str();
                 send(socket, output.c_str(), output.length(), 0);
             }
@@ -71,7 +71,7 @@ void Database::DisplayMessages(string data, string name, string username)
     }
 }
 
-void Database::NoticeUserHasJoined(string name, string username)
+void Database::NoticeUserHasJoined(string name, string username, int UserSocket)
 {
     string output;
     std::stringstream Respond;
@@ -87,10 +87,25 @@ void Database::NoticeUserHasJoined(string name, string username)
                 Respond << BLUE << "@" + username << RED << " Joined to (#" << name << ") " << RESET << std::endl;
                 output = Respond.str();
                 send(socket, output.c_str(), output.length(), 0);
+
             }
         }
     }
+    SYSTEM_CHANNEL::iterator it;
+    for (it = channels.begin(); it != channels.end(); ++it)
+    {
+        if (it->first == name)
+        {
+            it->second->UsersInChannel(UserSocket, username);
+            break;
+        }
+    }
+    Respond.str("");
+    Respond << BLUE << "(366) " + username << " #" + name << RED << " :End of /NAMES list " << RESET << std::endl;
+    output = Respond.str();
+    send(UserSocket, output.c_str(), output.length(), 0);
 }
+
 
 void Database::NoticeUserLogout(string name, string username)
 {
@@ -113,42 +128,75 @@ void Database::NoticeUserLogout(string name, string username)
     }
 }
 
-void Database::StartCommunication(int UserSocket, string data)
+void ExtractTwoRnages(string data, string &ch, string &ky) 
 {
-    string name = ""; // Channel Name
-    string msg = "";
+    std::stringstream Process(data);
 
-    Database *service = Database::GetInstance();
-    string username = service->GetUserBySocket(UserSocket);
-    Client *user = service->GetClient(username);
-    //string name = user->GetChannelName(user->GetChannelID());
-
-    size_t colonPos = data.find(' ');
-    name = data.substr(0, colonPos);
-    if (colonPos != std::string::npos)
-        msg = data.substr(colonPos + 1);
-    std::cout << "Channel Name : [" << name << "] Msg : [" << msg << "]"<< std::endl;
-    if (name == "QUIT")
-    {
-        NoticeUserLogout(msg, username);
-        user->ChannelLogout(msg);
-    }
-    else
-        service->DisplayMessages(msg, name, username);
+    Process >> ch >> ky;
 }
 
-SYSTEM_KEYVAL parseChannels(string &input) 
+STORE TokenRangeExtract(string data)
 {
-    string token;
-    SYSTEM_KEYVAL result;
-    std::istringstream iss(input);
+    STORE Extracted;
 
-    while (std::getline(iss, token, ',')) 
+    string MiniToken;
+    std::istringstream Object(data);
+
+    while (std::getline(Object, MiniToken, ','))
+        Extracted.push_back(MiniToken);
+    return (Extracted);
+}
+
+void Error403(int SK, string username, string channel)
+{
+    string output;
+    std::stringstream Respond;
+
+    Respond.str("");
+    Respond << "(403)" << BLUE << " @" + username <<  " " + channel << RED << " :No such channel " << RESET << std::endl;
+    output = Respond.str();
+    send(SK, output.c_str(), output.length(), 0);
+}
+
+SYSTEM_KEYVAL parseChannels(string &input, int SK, string username) 
+{
+    SYSTEM_KEYVAL result;
+    string ch, ky;
+    STORE RangeChannels, RangeKeys;
+
+    ExtractTwoRnages(input, ch, ky);
+
+    RangeChannels = TokenRangeExtract(ch);
+    RangeKeys = TokenRangeExtract(ky);
+
+    for (size_t i = 0; i < RangeChannels.size(); ++i) 
     {
-        size_t pos = token.find(':');
-        std::string channel = token.substr(0, pos);
-        std::string key = (pos != std::string::npos) ? token.substr(pos + 1) : ""; // If ':' is not found, key is empty
-        result.push_back(std::make_pair(channel, key));
+        if (i < RangeKeys.size())
+        {
+            if (RangeChannels[i][0] == '#')
+            {
+                RangeChannels[i].erase(RangeChannels[i].begin());
+                result.push_back(std::make_pair(RangeChannels[i], RangeKeys[i]));
+            }
+            else
+            {
+                Error403(SK, username, RangeChannels[i]);
+                return (result);
+            }
+        }
+        else
+        {
+            if (RangeChannels[i][0] == '#')
+            {
+                RangeChannels[i].erase(RangeChannels[i].begin());
+                result.push_back(std::make_pair(RangeChannels[i], ""));
+            }
+            else
+            {
+                Error403(SK, username, RangeChannels[i]);
+                return (result);
+            }
+        }
     }
     return result;
 }
@@ -196,19 +244,14 @@ void Database::HandelMultiChannel(string data, int UserSocket)
         send(UserSocket, output.c_str(), output.length(), 0);
         return ;
     }
-    /*
     if (Potection403(args))
     {
-        Respond.str("");
-        Respond << "(403)" << BLUE << " @" + username <<  " " + args << RED << " :No such channel " << RESET << std::endl;
-        output = Respond.str();
-        send(UserSocket, output.c_str(), output.length(), 0);
+        Error403(UserSocket, username, args);
         return ;
     }
-    */
     // else send error msg in client socket
 
-    SYSTEM_KEYVAL channels = parseChannels(args);
+    SYSTEM_KEYVAL channels = parseChannels(args, UserSocket, username);
     for (it = channels.begin(); it != channels.end();it++)
     {
         Channel *channel = service->GetChannel(it->first);
@@ -228,14 +271,13 @@ void Database::HandelMultiChannel(string data, int UserSocket)
             channel = new Channel(it->first, it->second);
             service->AddChannel(it->first, channel);
         }
-        user->SetConnection(TRUE);
         user->SaveChannel(it->first);
         user->ActiveInChannel(it->first);
         if (channel->FirstCreation())
             channel->addAdmin(username);
         else
             channel->addMember(username);
-        NoticeUserHasJoined(it->first, username);
+        NoticeUserHasJoined(it->first, username, UserSocket);
     }
 }
 
@@ -258,14 +300,97 @@ void Database::ParseUserInput(string data, int UserSocket)
 
 	Database *service = Database::GetInstance();
     string username = service->GetUserBySocket(UserSocket);
-    Client *user = service->GetClient(username);
+    //Client *user = service->GetClient(username);
 
-    if (user->GetConnection())
-        service->StartCommunication(UserSocket, data);
-    else if (command == "JOIN")
+    if (command == "JOIN" || command == "join")
         HandelMultiChannel(data, UserSocket);
+    else if (command == "PRIVMSG" || command == "privmsg")
+        service->StartCommunication(UserSocket, data.substr(8));
     else
         Protection421(command, UserSocket, username);
+}
+
+STORE GetSendingList(string data, string &message)
+{
+    std::stringstream Obj(data);
+    
+    std::string Ranges;
+    std::string token;
+    
+    STORE List;
+    
+    int i = 0;
+    while (std::getline(Obj, token, ':') && i < 2)
+    {
+        if (!i)
+            Ranges = token;
+        if (i)
+            message = token;
+        i++;
+    }
+    std::stringstream Object(Ranges);
+    while (std::getline(Object, token, ','))
+    {
+        token.erase(std::remove(token.begin(), token.end(), ' '), token.end());
+        List.push_back(token);
+    }
+    return (List);
+}
+
+void Database::PRIVMessages(string data, string name, string username)
+{
+    string output;
+    std::stringstream Respond;
+
+    int socketFailed = GetUserSocket(name);
+
+    
+    if (socketFailed == undefine)
+    {
+
+        Respond.str("");
+        Respond << RED << "@" + name << BLUE << " Not Found !" << RESET << std::endl;
+        output = Respond.str();
+        send(socketFailed, output.c_str(), output.length(), 0);
+        return ;
+    }
+    Respond.str("");
+    Respond << BLUE << "@" + username << GREEN << " :" << RESET << data << std::endl;
+    output = Respond.str();
+    send(socketFailed, output.c_str(), output.length(), 0);
+}
+
+void Database::StartCommunication(int UserSocket, string data)
+{
+    string msg;
+    STORE List;
+
+    Database *service = Database::GetInstance();
+    string username = service->GetUserBySocket(UserSocket);
+    //Client *user = service->GetClient(username);
+    //string name = user->GetChannelName(user->GetChannelID());
+    List = GetSendingList(data, msg);
+    for(size_t i = 0; i < List.size(); i++)
+    {
+        if (List[i][0] == '#')
+            service->DisplayMessages(msg, List[i].substr(1), username);
+        else
+            service->PRIVMessages(msg, List[i], username);
+    }
+    
+    /*
+    size_t colonPos = data.find(' ');
+    name = data.substr(0, colonPos);
+    if (colonPos != std::string::npos)
+        msg = data.substr(colonPos + 1);
+    if (name == "QUIT")
+    {
+        NoticeUserLogout(msg, username);
+        user->ChannelLogout(msg);
+    }
+    else
+        service->DisplayMessages(msg, name, username);
+    */
 }
 
 void Database::AddChannel(const std::string& name, Channel* channel)
@@ -291,6 +416,16 @@ string Database::GetUserBySocket(int UserSocket)
     return (undefine);
 }
 
+int Database::GetUserSocket(string name)
+{
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->first == name)
+            return it->second->GetSocket();
+    }
+    return (undefine);
+}
+
 Channel* Database::GetChannel(const std::string& name)
 {
     for (SYSTEM_CHANNEL::const_iterator it = channels.begin(); it != channels.end(); ++it)
@@ -300,194 +435,3 @@ Channel* Database::GetChannel(const std::string& name)
     }
 	return undefine;
 }
-
-/*
-
-void Database::RemoveChannel(const std::string& name)
-{
-	channels.erase(name);
-}
-
-void Database::RemoveClient(const std::string& name)
-{
-	clients.erase(name);
-}
-
-Database::~Database()
-{
-	delete Database_;
-}
-
-void Database::parce_user_data(char buffer[1024])
-{
-	Database *sing = Database::GetInstance();
-	if (std::strncmp(buffer, "TOPIC", 5) == 0)
-	{
-		std::cout << "TOPIC HAS BEEN ENCOUNTERED" << std::endl;
-		sing->handleTopic(buffer);
-	}
-	else if (std::strncmp(buffer, "JOIN", 4) == 0)
-	{
-		std::cout << "JOIN HAS BEEN ENCOUNTERED" << std::endl;
-		sing->AddChannel(buffer + 5, new Channel());
-	}
-	else if (std::strncmp(buffer, "MODE", 4) == 0)
-	{
-		sing->handleMode(buffer);
-	}
-}
-
-void Database::handleTopic(char buffer[1024])
-{
-	std::string name = buffer + 6;
-	std::cout << "HANDLING TOPIC " << name << std::endl;
-	std::string channelName = name.substr(0, name.find(' '));
-	std::string topic = name.substr(name.find(' ') + 1);
-	std::cout << "Channel Name = " << channelName << std::endl;
-	std::cout << "Topic = " << topic << std::endl;
-	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
-	if (it != channels.end())
-	{
-		std::cout << YELLOW "Topic to set : " << topic << std::endl;
-		it->second->setTopic(topic);
-		std::cout << YELLOW "TOPIC IS SET = " << it->second->getTopic() << GREEN << std::endl;
-	}
-	else
-	{
-		std::cout << RED "CHANNEL NOT FOUND" << GREEN << std::endl;
-	}
-	// Channel *channel = channels[channelName];
-	// channel->setTopic(topic);
-	// std::cout << YELLOW "TOPIC IS SET = " << channel->getTopic() << GREEN << std::endl;
-}
-
-void	Database::handleMode(char buffer[1024])
-{
-	bool addMode = true;
-
-	std::string data = buffer + 5;
-	std::string channelName = data.substr(0, data.find(' '));
-	std::string mode = data.substr(data.find(' ') + 1);
-	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
-	
-	for (size_t i = 0; i < mode.size(); i++) {
-		char c = mode[i];
-		if (c == '+' || c == '-') {
-			addMode = (c == '+');
-		}
-		else {
-			applyModeChange(c, addMode, it->second);
-		}
-	}
-}
-
-void	Database::applyModeChange(char mode, bool addMode, Channel *channel)
-{
-	switch (mode) {
-		case 'i':
-			channel->setInviteOnly(addMode);
-			break;
-		case 't':
-			channel->setProtectedTopic(addMode);
-			break;
-		case 'l':
-			channel->setUserLimit(10);
-			break;
-		case 'k':
-			channel->setKey("test");
-			break;
-		case 'o':
-			std::cout << "Operator" << std::endl;
-			break;
-		default:
-			break;
-	}
-}
-*/
-
-/*
-DataBase::DataBase() {}
-
-DataBase::~DataBase() {}
-
-int DataBase::UserIndex(int NewClientSocket)
-{
-    for (int i = 0; i < MAX_CL; i++)
-    {
-        if (users[i].socket == NewClientSocket)
-            return (i);
-    }
-    return (-1);
-}
-
-int DataBase::UserSocket(string username)
-{
-    for (int i = 0; i < MAX_CL; i++)
-    {
-        if (users[i].name == username)
-            return (users[i].socket);
-    }
-    return (-1);
-}
-
-bool DataBase::IsOnline(int NewClientSocket)
-{
-    return (users[UserIndex(NewClientSocket)].online);
-}
-
-void DataBase::SetConnection(int NewClientSocket, bool status)
-{
-    users[UserIndex(NewClientSocket)].online = status;
-}
-
-std::string DataBase::FindUser(int NewClientSocket)
-{
-    return (users[UserIndex(NewClientSocket)].name);
-}
-
-bool DataBase::UpdateUserChannel(int NewClientSocket, string &channel)
-{
-    for (int i = 0; i < MAX_CL; i++)
-    {
-        if (users[i].socket == NewClientSocket)
-        {
-            int ChannelIndex = 0;
-            for (int x = 0; x < MAX_CHANNEL; x++)
-            {
-                if (users[i].ChannelID[x].empty())
-                    ChannelIndex = x;
-                
-                if (users[i].ChannelID[x] == channel)
-                    return (FALSE);
-            }
-            users[i].ChannelID[ChannelIndex] = channel;
-            return (TRUE);
-        }
-    }
-    return (TRUE);
-}
-
-void DataBase::ActiveInChannel(int index, int NewClientSocket)
-{
-    users[UserIndex(NewClientSocket)].CurrentChannel = index;
-}
-
-int DataBase::InChannelID(int NewClientSocket)
-{
-    return (users[UserIndex(NewClientSocket)].CurrentChannel);
-}
-
-void DataBase::UserAddInformation(int ID, int Socket, string Name)
-{
-    users[ID].id = ID;
-    users[ID].name = Name;
-    users[ID].socket = Socket;
-    for (size_t i = 0; i < MAX_CHANNEL; i++)
-    {
-        users[ID].ChannelID[i] = "";
-        users[ID].Permission[i] = 0;
-    }
-    users[ID].online = FALSE;
-    users[ID].CurrentChannel = 0;
-}
-*/

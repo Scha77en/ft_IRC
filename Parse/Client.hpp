@@ -39,6 +39,7 @@ class Client
         bool GetConnection();
         bool ChannelList(string name);
 
+        string GetUsername(void);
         string GetChannelName(int index);
         
         void NewClient(int fd);
