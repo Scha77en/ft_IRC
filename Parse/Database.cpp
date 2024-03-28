@@ -71,7 +71,18 @@ void Database::DisplayMessages(string data, string name, string username)
     }
 }
 
-void Database::NoticeUserHasJoined(string name, string username, int UserSocket)
+void Database::SetServerIP(struct in_addr host)
+{
+    this->server_ip = host;
+}
+
+string Database::GetServerIP(void)
+{
+    string HOST(inet_ntoa(server_ip));
+    return (HOST);
+}
+
+void Database::NoticeUserHasJoined(string name, string username, int UserSocket, string IP)
 {
     string output;
     std::stringstream Respond;
@@ -84,10 +95,9 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket)
             if (socket > undefine)
             {
                 Respond.str("");
-                Respond << BLUE << "@" + username << RED << " Joined to (#" << name << ") " << RESET << std::endl;
+                Respond << ":" + username + "!~" + username.substr(0,1) +  "@" + IP + " JOIN #" + name << std::endl;
                 output = Respond.str();
                 send(socket, output.c_str(), output.length(), 0);
-
             }
         }
     }
@@ -96,16 +106,15 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket)
     {
         if (it->first == name)
         {
-            it->second->UsersInChannel(UserSocket, username);
+            it->second->UsersInChannel(UserSocket, username, GetServerIP());
             break;
         }
     }
     Respond.str("");
-    Respond << BLUE << "(366) " + username << " #" + name << RED << " :End of /NAMES list " << RESET << std::endl;
+    Respond << ":" + GetServerIP() + " 366 " + username << " #" + name + " :End of /NAMES list." << RESET << std::endl;
     output = Respond.str();
     send(UserSocket, output.c_str(), output.length(), 0);
 }
-
 
 void Database::NoticeUserLogout(string name, string username)
 {
@@ -220,6 +229,46 @@ bool Potection403(string data)
     return (position == std::string::npos);
 }
 
+void Protection475(string name, string username, int UserSocket, string IP)
+{
+    string output = ":" + IP + " 475 " + username + " #" + name + " :Cannot join channel (+k) - bad key\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+/*
+S <-   :irc.example.com 475 adrian #test :Cannot join channel (+k) - bad key
+*/
+
+void Protection471(string name, int UserSocket, string username, string IP)
+{
+    string output = ":" + IP + " 471 " + username + " #" + name + " :Cannot join channel (+l)\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+/*
+S <-   :irc.example.com 471 alice #test :Cannot join channel (+l)
+*/
+
+void Protection474(string name, int UserSocket, string username, string IP)
+{
+    string output = ":" + IP + " 474 " + username + " #" + name + " :Cannot join channel (+b)\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+/*
+S <-   :irc.example.com 474 alice #test :Cannot join channel (+b)
+*/
+
+void Protection473(string name, int UserSocket, string username, string IP)
+{
+    string output = ":" + IP + " 473 " + username + " #" + name + " :Cannot join channel (+i)\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+/*
+S <-   :irc.example.com 473 alice #test :Cannot join channel (+i)
+*/
+
 void Database::HandelMultiChannel(string data, int UserSocket)
 {
     string args;
@@ -249,37 +298,64 @@ void Database::HandelMultiChannel(string data, int UserSocket)
         Error403(UserSocket, username, args);
         return ;
     }
-    // else send error msg in client socket
-
+    string IP = user->GetClientIP();
     SYSTEM_KEYVAL channels = parseChannels(args, UserSocket, username);
     for (it = channels.begin(); it != channels.end();it++)
     {
         Channel *channel = service->GetChannel(it->first);
         if (channel != undefine)
         {
+            channel->BanMember("username"); // Delete after for test Only !
             if (channel->GetSecretKey() != it->second)
             {
-                Respond.str("");
-                Respond << BLUE << it->first << RED << " is Protected ! " << RESET << std::endl;
-                output = Respond.str();
-                send(UserSocket, output.c_str(), output.length(), 0);
+                Protection475(it->first, username, UserSocket, IP);
                 continue;
             }
+            if (channel->GetLimit() != -1)
+            {
+                bool OutOfBound = channel->CountInvited() + channel->CountMembers() + channel->CountAdmins() + 1 > channel->GetLimit();
+                if (OutOfBound)
+                {
+                    Protection471(it->first, UserSocket, username, IP);
+                    continue;
+                }
+            }
+            if (channel->UserIsBanned(username))
+            {
+                Protection474(it->first, UserSocket, username, IP);
+                continue;
+            }
+            /*
+            if (channel->isInviteOnly())
+            {
+                Protection473(it->first, UserSocket, username, IP);
+                continue;
+            }
+            */
         }
         if (channel == undefine)
         {
             channel = new Channel(it->first, it->second);
+            channel->SetSymbol("=");
             service->AddChannel(it->first, channel);
         }
+        else
+            channel->SetSymbol("@");
         user->SaveChannel(it->first);
         user->ActiveInChannel(it->first);
         if (channel->FirstCreation())
             channel->addAdmin(username);
         else
             channel->addMember(username);
-        NoticeUserHasJoined(it->first, username, UserSocket);
+        NoticeUserHasJoined(it->first, username, UserSocket, IP);
     }
 }
+/*
+bool Channel::UserIsBanned(std::string username)
+
+void Channel::BanMember(std::string username)
+
+*/
 
 void Protection421(string command, int UserSocket, string username)
 {
@@ -413,7 +489,7 @@ string Database::GetUserBySocket(int UserSocket)
         if (it->second->GetSocket() == UserSocket)
             return it->first;
     }
-    return (undefine);
+    return ("");
 }
 
 int Database::GetUserSocket(string name)

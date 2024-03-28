@@ -14,6 +14,38 @@ void Client::NewClient(int fd)
 	this->socket = fd;
 }
 
+void Client::SetName(string name)
+{
+    this->_name = name;
+}
+
+void Client::SetPass(string pass)
+{
+    this->_pass = pass;
+}
+
+string Client::GetName(void)
+{
+    return this->_name;
+}
+
+string Client::GetPass(void)
+{
+    return this->_pass;
+}
+
+
+void Client::NewClientIP(struct in_addr ClientIP)
+{
+    string IP(inet_ntoa(ClientIP));
+    this->_ip = IP;
+}
+
+string Client::GetClientIP(void)
+{
+    return (this->_ip);
+}
+
 int Client::GetSocket(void)
 {
     return this->socket;

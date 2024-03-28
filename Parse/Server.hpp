@@ -5,7 +5,10 @@
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
+#include <string>
 #include <arpa/inet.h>
+#include <algorithm>
+#include <cctype>
 #include <sstream>
 #include <sys/socket.h>
 #include <fcntl.h>
@@ -32,13 +35,14 @@ class Server
         Server() {}
 
         static Server* instance;
+
         struct sockaddr_in server_addr;
         struct pollfd fds[MAX_CLIENTS];
+        struct in_addr client_ips[MAX_CLIENTS];
 
         socklen_t addrlen;
         
         int server_socket;
-    
 
         Database *info;
 
@@ -47,10 +51,13 @@ class Server
         void ServerAddr();
         void StartSession();
         void RemoveNewLines(string &str);
+        void RegisterClient(int NewClientSocket);
+
         
         bool ServerCreate();
         bool ProcessClient();
-        bool ProccessUserData(int NewClientSocket);
+        bool GetDataInformation(int NewClientSocket, string &command, string &output);
+        bool ProccessUserData(int NewClientSocket, struct in_addr ClientIP);
 
         static Server* getInstance();
 };

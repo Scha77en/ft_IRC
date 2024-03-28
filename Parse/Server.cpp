@@ -14,38 +14,100 @@ Server* Server::getInstance()
     return instance;
 }
 
-void ExtractUserName(const char* buffer, std::string& UserName) 
+void Extract(const char* buffer, std::string& Value, string &command) 
 {
     std::stringstream ss(buffer);
-    ss >> UserName;
+    ss >> command >> Value;
 }
 
-bool Server::ProccessUserData(int NewClientSocket)
+bool Server::GetDataInformation(int NewClientSocket, string &command, string &output)
 {
+    string CHECK = "";
     char BUFFER[BUFFER_SIZE];
 
-    info = Database::GetInstance();
-    string ProcessInfo = "ENTER USERNAME : ";
-    send(NewClientSocket, ProcessInfo.c_str(), ProcessInfo.length(), 0);
-
-    int bytes_received = recv(NewClientSocket, BUFFER, BUFFER_SIZE, 0);
+    int bytes_received = recv(NewClientSocket, BUFFER, sizeof(BUFFER), 0);
+    if (bytes_received <= 0)
+        return undefine;
     BUFFER[bytes_received] = '\0';
     string Received(BUFFER);
     RemoveNewLines(Received);
-    ExtractUserName(BUFFER, Received);
+    Extract(BUFFER, Received, CHECK);
+    char* charPtr = const_cast<char*>(CHECK.c_str());
+    for (size_t i = 0; i < strlen(charPtr); ++i)
+        charPtr[i] = std::toupper(charPtr[i]);
+    string UpperCheck(charPtr);
+    std::cout << "command => [" + UpperCheck + "]" << std::endl;
+    if (command != UpperCheck || Received.empty())
+        return undefine;
+    std::cout << "Value => [" + Received + "]" << std::endl;
+    output = Received;
+    return (1);
+}
 
-    std::stringstream Respond;
+void WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
+{
+    string M001 = ":irc.1337.com 001 "+username+" :Welcome to the Internet Relay Network "+username+"!"+user+"@"+hostname+"\n";
+    string M002 = ":irc.1337.com 002 "+username+" :Your host is "+hostname+", running version InspIRCd-3.10\n";
+    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + "<date>" + "\n"; 
+    string M004 = ":irc.1337.com 004 "+username+" irc.1337.com InspIRCd-3.10 iobl\n";
+    string M005 = ":irc.1337.com 005 "+username+" CHANTYPES=# :are supported by this server\n";
+    send(NewClientSocket, M001.c_str(), M001.length(), 0);
+    send(NewClientSocket, M002.c_str(), M002.length(), 0);
+    send(NewClientSocket, M003.c_str(), M003.length(), 0);
+    send(NewClientSocket, M004.c_str(), M004.length(), 0);
+    send(NewClientSocket, M005.c_str(), M005.length(), 0);
+}
 
-    Respond << GREEN << "\nWelcome Back " << "@" + Received << RESET << std::endl;
-    string output = Respond.str();
-    send(NewClientSocket, output.c_str(), output.length(), 0);
+bool Server::ProccessUserData(int NewClientSocket, struct in_addr ClientIP)
+{
+    bool is_log = 1;
+    string command = "";
 
-    info->AddClient(Received);
-    Client * NewClient = info->GetClient(Received);
+    info = Database::GetInstance();
+
+    command = "PASS";
+    string password = "";
+    if (!GetDataInformation(NewClientSocket, command, password))
+        is_log = undefine;
+    if (is_log == undefine)
+        return (undefine);
+    command = "NICK";
+    string username = "";
+    if (!GetDataInformation(NewClientSocket, command, username))
+        is_log = undefine;
+    if (is_log == undefine)
+        return (undefine);
+    command = "USER";
+    string name = "";
+    if (!GetDataInformation(NewClientSocket, command, name))
+        is_log = undefine;
+    if (is_log == undefine)
+        return (undefine);
+    info->AddClient(username);
+    Client * NewClient = info->GetClient(username);
+    NewClient->SetName(name);
+    NewClient->SetConnection(1);
+    NewClient->SetPass(password);
     NewClient->NewClient(NewClientSocket);
-
+    NewClient->NewClientIP(ClientIP);
+    string hostname(inet_ntoa(ClientIP));
+    WelcomeMsg(NewClientSocket,username, name, hostname);
     return TRUE;
 }
+
+/*
+std::string  welcome = ":ayman.irc.chat 001 c1 :Welcome to the irc.Chat Internet Relay Chat Network c1\r\n";
+
+    std::cout << "-->" << welcome << std::endl;
+
+*/
+
+/*
+nc localhost 5554 (Copy and past)
+PASS 369
+NICK atye3
+USER tyue
+*/
 
 void Server::StartSession()
 {
@@ -55,16 +117,22 @@ void Server::StartSession()
     {
         if (fds[i].fd != undefine && (fds[i].revents & POLLIN)) 
         {
-            
-            int bytes_received = recv(fds[i].fd, BUFFER, BUFFER_SIZE - 1, 0);
-            if (bytes_received > 0)
+            info = Database::GetInstance();
+            if (info->GetUserBySocket(fds[i].fd).empty())
+                ProccessUserData(fds[i].fd, client_ips[i]);
+            else
             {
-                BUFFER[bytes_received] = '\0';
-                string Received(BUFFER);
-                RemoveNewLines(Received);
-                std::cout << BLUE << "* Received : " << RESET << "[" << Received << "]" << std::endl;
-                info = Database::GetInstance();
-                info->ParseUserInput(Received, fds[i].fd);
+                int bytes_received = recv(fds[i].fd, BUFFER, BUFFER_SIZE - 1, 0);
+                if (bytes_received > 0)
+                {
+                    BUFFER[bytes_received] = '\0';
+                    string Received(BUFFER);
+                    RemoveNewLines(Received);
+                    std::cout << BLUE << "# Received : " << RESET << "[" << Received << "]" << std::endl;
+                    //std::cout << "Nickname : [" + username + "]" << std::endl;
+                    info->ParseUserInput(Received, fds[i].fd);
+                }
+
             }
             /*
             else if (bytes_received == 0) 
@@ -84,24 +152,16 @@ void Server::StartSession()
 
 bool Server::ProcessClient() 
 {
-    fds[0].fd = server_socket;
-    fds[0].events = POLLIN;
-
-    for (int i = 1; i < MAX_CLIENTS; ++i) 
-    {
-        fds[i].fd = undefine;
-        fds[i].events = POLLIN;
-    }
-
     while (true) 
     {
         int num_ready = poll(fds, MAX_CLIENTS, -1);
         if (num_ready <= 0)
             continue;
-
         if (fds[0].revents & POLLIN) 
         {
-            int NewClientSocket = accept(server_socket, (struct sockaddr *)&server_addr, &addrlen);
+            struct sockaddr_in client_addr;
+            socklen_t CL_addrlen = sizeof(client_addr);
+            int NewClientSocket = accept(server_socket, (struct sockaddr *)&client_addr, &CL_addrlen);
             if (NewClientSocket == -1)
                 continue;
             
@@ -110,8 +170,9 @@ bool Server::ProcessClient()
             {
                 if (fds[i].fd == undefine) 
                 {
-                    fds[i].fd = NewClientSocket;
                     empty_slot = i;
+                    fds[i].fd = NewClientSocket;
+                    client_ips[i] = client_addr.sin_addr;
                     break;
                 }
             }
@@ -120,7 +181,6 @@ bool Server::ProcessClient()
                 close(NewClientSocket);
                 continue;
             }
-            this->ProccessUserData(NewClientSocket);
         }
         this->StartSession();
     }
@@ -133,6 +193,8 @@ void Server::RemoveNewLines(string &str)
     size_t pos = 0;
     while ((pos = str.find('\n', pos)) != std::string::npos)
         str.erase(pos, 1);
+    while ((pos = str.find('\r', pos)) != std::string::npos)
+        str.erase(pos, 1);
 }
 
 bool Server::ServerCreate()
@@ -143,9 +205,8 @@ bool Server::ServerCreate()
         std::cerr << "Error: Could not create socket.\n";
         return EXIT_FAILURE;
     }
-
     int opt = 1;
-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt));
     //type of socket created 
 
 	server_addr.sin_family = AF_INET; 
@@ -158,7 +219,6 @@ bool Server::ServerCreate()
         std::cerr << "Error: Bind failed.\n";
         return EXIT_FAILURE;
     }
-
     // Prepare to accept connections on socket FD.
 	if (listen(server_socket, 5) == -1) 
     {
@@ -168,5 +228,12 @@ bool Server::ServerCreate()
     addrlen = sizeof(server_addr);
     //fcntl(server_socket, F_SETFL, O_NONBLOCK);
     std::cout << BLUE << "Server listening on port " << PORT << "...\n";
+    fds[0].fd = server_socket;
+    fds[0].events = POLLIN;
+    for (int i = 1; i < MAX_CLIENTS; ++i) 
+    {
+        fds[i].fd = undefine;
+        fds[i].events = POLLIN;
+    }
     return this->ProcessClient();
 }

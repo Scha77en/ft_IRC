@@ -29,32 +29,46 @@ class Channel
 {
 	private:
 		std::string _key;
+		std::string _symbol;
 		std::string _name;
 		std::string _topic;
 
 		Container _members;
 		Container _admins;
-		//Container _invited;
+		Container _invited;
+		Container _Banned;
 
-		//int _limit;
+		int _limit;
 
-		//bool _invite_only;
+		bool _invite_only;
 		//bool _protectedTopic;
 
 	public:
 
 		~Channel();
 		Channel(std::string name, std::string key);
+	
+		int GetLimit(void);
+		int CountMembers(void);
+		int CountInvited(void);
+		int CountAdmins(void);
 
+		bool isInviteOnly();
 		bool FirstCreation(void);
+		bool UserIsBanned(std::string username);
 
 		std::string GetSecretKey();
 		std::string ChannelName(void);
-	
+		std::string GetSymbol(void);
+
+		void BanMember(std::string username);
+		void SetLimit(int limited_to);
+		void SetSymbol(std::string status);
 		void addMember(std::string member);
-		void MembertoAdmin(std::string member);
 		void addAdmin(std::string member);
-		void UsersInChannel(int Sokect, std::string username);
+		void MembertoAdmin(std::string member);
+		void UsersInChannel(int Sokect, std::string username, std::string IP);
+		void setInviteOnly(bool invite_only);
 
 
 
@@ -76,8 +90,6 @@ class Channel
 		// void	setUserMode(std::string mode);
 		void setKey(std::string key);
 		std::string getKey(void);
-		void setInviteOnly(bool invite_only);
-		bool isInviteOnly();
 		void setProtectedTopic(bool protectedTopic);
 		bool isProtectedTopic();
         */

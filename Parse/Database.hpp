@@ -42,6 +42,8 @@ class Database
 		Database() {}
 
 		static Database* DB;
+
+		struct in_addr server_ip;
 		
 		SYSTEM_CLIENT clients;
 		SYSTEM_CHANNEL channels;
@@ -53,9 +55,11 @@ class Database
 
 		~Database();
 		static Database *GetInstance(void);
+
 		
         
 		void	PrintChannels();
+		void 	SetServerIP(struct in_addr host);
 		void    AddClient(const std::string& name);
         void    ParseUserInput(string data, int UserSocket);
         void    DisplayMessages(int UserSocket, string data);
@@ -64,13 +68,14 @@ class Database
         void    HandelMultiChannel(string data, int UserSocket);
 		void    AddChannel(const std::string& name, Channel* channel);
         void    DisplayMessages(string data, string name, string username);
-        void 	NoticeUserHasJoined(string name, string username, int UserSocket);
+        void 	NoticeUserHasJoined(string name, string username, int UserSocket, string IP);
         void    NoticeUserLogout(string name, string username);
 		void 	PRIVMessages(string data, string name, string username);
 
         Client* GetClient(const std::string& name);
 		Channel* GetChannel(const std::string& name);
 
+		string GetServerIP(void);
         string GetUserBySocket(int UserSocket);
 
 		int GetUserSocket(string name);
