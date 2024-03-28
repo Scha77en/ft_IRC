@@ -33,44 +33,6 @@ void RemoveNewLine(string &str)
         str.erase(pos, 1);
 }
 
-void Database::DisplayMessages(string data, string name, string username)
-{
-    string output;
-    bool is_out = undefine;
-    std::stringstream Respond;
-    int socketFailed = undefine;
-
-    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
-    {
-        if (it->second->ChannelList(name) && it->first == username)
-            is_out = 1;
-        if (it->first == username)
-            socketFailed = it->second->GetSocket();
-    }
-    if (is_out == undefine)
-    {
-
-        Respond.str("");
-        Respond << RED << "@" + username << BLUE << " Not In [#" << name << "]" << RESET << std::endl;
-        output = Respond.str();
-        send(socketFailed, output.c_str(), output.length(), 0);
-    }
-    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end() && is_out; ++it)
-    {
-        if (it->second->ChannelList(name))
-        {
-            int socket = it->second->GetSocket();
-            if (socket > undefine)
-            {
-                Respond.str("");
-                Respond << BLUE << "@" + username << GREEN << " [" << name << "] :" << RESET << data << std::endl;
-                output = Respond.str();
-                send(socket, output.c_str(), output.length(), 0);
-            }
-        }
-    }
-}
-
 void Database::SetServerIP(struct in_addr host)
 {
     this->server_ip = host;
@@ -269,6 +231,12 @@ void Protection473(string name, int UserSocket, string username, string IP)
 S <-   :irc.example.com 473 alice #test :Cannot join channel (+i)
 */
 
+void xProtection403(string command, int UserSocket, string username)
+{
+    string output = "403 " + username + " " + command + " :Unknown command\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
 void Database::HandelMultiChannel(string data, int UserSocket)
 {
     string args;
@@ -288,14 +256,14 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     if (Protection(args) || args.empty())
     {
         Respond.str("");
-        Respond << "(461)" << BLUE << " @" + username << " JOIN :" << RED << "Not enough parameters " << RESET << std::endl;
+        Respond << "461)" << BLUE << " @" + username << " JOIN :" << RED << "Not enough parameters " << RESET << std::endl;
         output = Respond.str();
         send(UserSocket, output.c_str(), output.length(), 0);
         return ;
     }
     if (Potection403(args))
     {
-        Error403(UserSocket, username, args);
+        xProtection403(args, UserSocket, username);
         return ;
     }
     string IP = user->GetClientIP();
@@ -354,16 +322,20 @@ void Database::HandelMultiChannel(string data, int UserSocket)
 bool Channel::UserIsBanned(std::string username)
 
 void Channel::BanMember(std::string username)
+421) 
+  "<client> <command> :Unknown command"
 
 */
 
 void Protection421(string command, int UserSocket, string username)
 {
-    string output;
-    std::stringstream Respond;
+    string output = "421 " + username + " " + command + " :Unknown command\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
 
-    Respond << "(421)" << BLUE << " @" + username <<  " " + command << RED << " :Unknown command " << RESET << std::endl;
-    output = Respond.str();
+void Protection403(string command, int UserSocket, string username)
+{
+    string output = "403 " + username + " " + command + " :Unknown command\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -382,29 +354,29 @@ void Database::ParseUserInput(string data, int UserSocket)
         HandelMultiChannel(data, UserSocket);
     else if (command == "PRIVMSG" || command == "privmsg")
         service->StartCommunication(UserSocket, data.substr(8));
+    else if (command == "MODE" || command == "mode" || command == "PONG" || command == "pong")
+        return ;
     else
         Protection421(command, UserSocket, username);
 }
 
 STORE GetSendingList(string data, string &message)
 {
-    std::stringstream Obj(data);
-    
+    STORE List;
+
+    size_t pos = data.find("::");
+    if (pos != std::string::npos) 
+        data[pos] = ' ';
+
     std::string Ranges;
     std::string token;
+    std::stringstream Obj(data);
     
-    STORE List;
+    std::getline(Obj, Ranges, ' ');
+    std::getline(Obj, message);
     
-    int i = 0;
-    while (std::getline(Obj, token, ':') && i < 2)
-    {
-        if (!i)
-            Ranges = token;
-        if (i)
-            message = token;
-        i++;
-    }
     std::stringstream Object(Ranges);
+    std::cout << "Ranges : [" + Ranges << "] message : [" + message + "\n";
     while (std::getline(Object, token, ','))
     {
         token.erase(std::remove(token.begin(), token.end(), ' '), token.end());
@@ -413,6 +385,10 @@ STORE GetSendingList(string data, string &message)
     return (List);
 }
 
+/*
+:u0op00!~tyue@197.230.30.146 PRIVMSG u0op : HELLO
+
+*/
 void Database::PRIVMessages(string data, string name, string username)
 {
     string output;
@@ -430,9 +406,17 @@ void Database::PRIVMessages(string data, string name, string username)
         send(socketFailed, output.c_str(), output.length(), 0);
         return ;
     }
-    Respond.str("");
-    Respond << BLUE << "@" + username << GREEN << " :" << RESET << data << std::endl;
-    output = Respond.str();
+    string hostname = "";
+    string USER = "";
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->first == username)
+        {
+           hostname = it->second->GetClientIP();
+           USER = it->second->GetName();
+        }
+    }
+    output = ":"+ username + "!~" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
     send(socketFailed, output.c_str(), output.length(), 0);
 }
 
@@ -449,7 +433,7 @@ void Database::StartCommunication(int UserSocket, string data)
     for(size_t i = 0; i < List.size(); i++)
     {
         if (List[i][0] == '#')
-            service->DisplayMessages(msg, List[i].substr(1), username);
+            service->DisplayMessages(msg, List[i].substr(1), username, UserSocket);
         else
             service->PRIVMessages(msg, List[i], username);
     }
@@ -468,6 +452,46 @@ void Database::StartCommunication(int UserSocket, string data)
         service->DisplayMessages(msg, name, username);
     */
 }
+
+void Database::DisplayMessages(string data, string name, string username, int UserSocket)
+{
+    string output;
+    bool is_out = undefine;
+    std::stringstream Respond;
+    int socketFailed = undefine;
+
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->second->ChannelList(name) && it->first == username)
+            is_out = 1;
+        if (it->first == username)
+            socketFailed = it->second->GetSocket();
+    }
+    if (is_out == undefine)
+    {
+        Respond.str("");
+        Respond << RED << "@" + username << BLUE << " Not In [#" << name << "]" << RESET << std::endl;
+        output = Respond.str();
+        send(socketFailed, output.c_str(), output.length(), 0);
+    }
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end() && is_out; ++it)
+    {
+        if (it->second->ChannelList(name))
+        {
+            int socket = it->second->GetSocket();
+            if (socket > undefine && socket != UserSocket)
+            {
+                it->second->GetName();
+                output = ":"+username+ "!~"+it->second->GetName()+"@" + it->second->GetClientIP() + " PRIVMSG #"+name+" "+data+"\n";
+                send(socket, output.c_str(), output.length(), 0);
+            }
+        }
+    }
+}
+
+/*
+:dan!~h@localhost PRIVMSG #coolpeople :
+*/
 
 void Database::AddChannel(const std::string& name, Channel* channel)
 {

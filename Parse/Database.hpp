@@ -67,7 +67,7 @@ class Database
         void    StartCommunication(int UserSocket, string data);
         void    HandelMultiChannel(string data, int UserSocket);
 		void    AddChannel(const std::string& name, Channel* channel);
-        void    DisplayMessages(string data, string name, string username);
+        void    DisplayMessages(string data, string name, string username, int UserSocket);
         void 	NoticeUserHasJoined(string name, string username, int UserSocket, string IP);
         void    NoticeUserLogout(string name, string username);
 		void 	PRIVMessages(string data, string name, string username);

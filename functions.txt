@@ -98,5 +98,5 @@ file descriptors, waiting until one or more of the file descriptors become
 
 
 PASS 369
-NICK atye3
-USER tyue
+NICK u0op00
+USER tyue f f g
