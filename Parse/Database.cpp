@@ -193,7 +193,7 @@ bool Potection403(string data)
 
 void Protection475(string name, string username, int UserSocket, string IP)
 {
-    string output = ":" + IP + " 475 " + username + " #" + name + " :Cannot join channel (+k) - bad key\n";
+    string output = ":irc.1337.com" + IP + " 475 " + username + " #" + name + " :Cannot join channel (+k) - bad key\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -203,7 +203,7 @@ S <-   :irc.example.com 475 adrian #test :Cannot join channel (+k) - bad key
 
 void Protection471(string name, int UserSocket, string username, string IP)
 {
-    string output = ":" + IP + " 471 " + username + " #" + name + " :Cannot join channel (+l)\n";
+    string output = ":irc.1337.com" + IP + " 471 " + username + " #" + name + " :Cannot join channel (+l)\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -213,7 +213,7 @@ S <-   :irc.example.com 471 alice #test :Cannot join channel (+l)
 
 void Protection474(string name, int UserSocket, string username, string IP)
 {
-    string output = ":" + IP + " 474 " + username + " #" + name + " :Cannot join channel (+b)\n";
+    string output = ":irc.1337.com" + IP + " 474 " + username + " #" + name + " :Cannot join channel (+b)\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -223,17 +223,37 @@ S <-   :irc.example.com 474 alice #test :Cannot join channel (+b)
 
 void Protection473(string name, int UserSocket, string username, string IP)
 {
-    string output = ":" + IP + " 473 " + username + " #" + name + " :Cannot join channel (+i)\n";
+    string output = ":irc.1337.com" + IP + " 473 " + username + " #" + name + " :Cannot join channel (+i)\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void xProtection403(string command, int UserSocket, string username)
+{
+    string output = ":irc.1337.com 403 " + username + " " + command + " :Unknown command\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
 /*
-S <-   :irc.example.com 473 alice #test :Cannot join channel (+i)
+
+void Database::OutFromAllChannels(int UserSocket)
+{
+    Database *service = Database::GetInstance();
+    string username = service->GetUserBySocket(UserSocket);
+    Client *user = service->GetClient(username);
+
+    STORE UserChannels = user->GetAllChannels();
+}
 */
 
-void xProtection403(string command, int UserSocket, string username)
+void ERR_TOOMANYCHANNELS_405(string name, int UserSocket, string username)
 {
-    string output = "403 " + username + " " + command + " :Unknown command\n";
+    string output = ":irc.1337.com 405 " + username + " #" + name + " :You have joined too many channels\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void ERR_NEEDMOREPARAMS_461(string name, int UserSocket, string username)
+{
+    string output = ":irc.1337.com 461 " + username + " " + name + " :Not enough parameters\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -255,10 +275,7 @@ void Database::HandelMultiChannel(string data, int UserSocket)
         args = data.substr(colonPos + 1);
     if (Protection(args) || args.empty())
     {
-        Respond.str("");
-        Respond << "461)" << BLUE << " @" + username << " JOIN :" << RED << "Not enough parameters " << RESET << std::endl;
-        output = Respond.str();
-        send(UserSocket, output.c_str(), output.length(), 0);
+        ERR_NEEDMOREPARAMS_461("JOIN",UserSocket, username);
         return ;
     }
     if (Potection403(args))
@@ -270,10 +287,15 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     SYSTEM_KEYVAL channels = parseChannels(args, UserSocket, username);
     for (it = channels.begin(); it != channels.end();it++)
     {
+        if (user->LimitedChannels())
+        {
+            ERR_TOOMANYCHANNELS_405(it->first, UserSocket, username);
+            break;
+        }
         Channel *channel = service->GetChannel(it->first);
         if (channel != undefine)
         {
-            channel->BanMember("username"); // Delete after for test Only !
+            //channel->BanMember("username"); // Delete after for test Only !
             if (channel->GetSecretKey() != it->second)
             {
                 Protection475(it->first, username, UserSocket, IP);
@@ -293,13 +315,11 @@ void Database::HandelMultiChannel(string data, int UserSocket)
                 Protection474(it->first, UserSocket, username, IP);
                 continue;
             }
-            /*
             if (channel->isInviteOnly())
             {
                 Protection473(it->first, UserSocket, username, IP);
                 continue;
             }
-            */
         }
         if (channel == undefine)
         {
@@ -329,13 +349,13 @@ void Channel::BanMember(std::string username)
 
 void Protection421(string command, int UserSocket, string username)
 {
-    string output = "421 " + username + " " + command + " :Unknown command\n";
+    string output = ":irc.1337.com 421 " + username + " " + command + " :Unknown command\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
 void Protection403(string command, int UserSocket, string username)
 {
-    string output = "403 " + username + " " + command + " :Unknown command\n";
+    string output = ":irc.1337.com 403 " + username + " " + command + " :Unknown command\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -385,51 +405,88 @@ STORE GetSendingList(string data, string &message)
     return (List);
 }
 
-/*
-:u0op00!~tyue@197.230.30.146 PRIVMSG u0op : HELLO
+void ERR_NORECIPIENT_411(string username, int UserSocket)
+{
+    string output = ":irc.1337.com 411 " + username + " :No recipient given PRIVMSG\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
 
-*/
+void ERR_NOSUCHCHANNEL_403(string username, string target, int UserSocket)
+{
+    string output = ":irc.1337.com 403 " + username + " " + target + " :No such channel\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void ERR_CANNOTSENDTOCHAN_404(string username, string target, int UserSocket)
+{
+    string output = ":irc.1337.com 403 " + username + " " + target + " :Cannot send to channel\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void ERR_NOSUCHNICK(string username, string target, int UserSocket)
+{
+    string output = ":irc.1337.com 401 " + username + " " + target + " :No such nick/channel\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void ERR_NOTEXTTOSEND_412(string username, int UserSocket)
+{
+    string output = ":irc.1337.com 412 " + username + " :No text to send\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void RPL_AWAY_301(string username, string target, string msg ,int UserSocket)
+{
+    string output = ":irc.1337.com 301 " + username + " " + target + " " + msg + "\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
 void Database::PRIVMessages(string data, string name, string username)
 {
-    string output;
-    std::stringstream Respond;
-
+    int senderSocket = undefine;
     int socketFailed = GetUserSocket(name);
 
-    
-    if (socketFailed == undefine)
-    {
-
-        Respond.str("");
-        Respond << RED << "@" + name << BLUE << " Not Found !" << RESET << std::endl;
-        output = Respond.str();
-        send(socketFailed, output.c_str(), output.length(), 0);
-        return ;
-    }
-    string hostname = "";
     string USER = "";
+    string hostname = "";
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
         if (it->first == username)
         {
            hostname = it->second->GetClientIP();
            USER = it->second->GetName();
+           senderSocket = it->second->GetSocket();
+           break;
         }
     }
-    output = ":"+ username + "!~" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
+    if (socketFailed == undefine)
+    {
+        ERR_NOSUCHNICK(username, name, senderSocket);
+        return ;
+    }
+    string output = ":"+ username + "!~" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
     send(socketFailed, output.c_str(), output.length(), 0);
 }
+
 
 void Database::StartCommunication(int UserSocket, string data)
 {
     string msg;
     STORE List;
-
     Database *service = Database::GetInstance();
     string username = service->GetUserBySocket(UserSocket);
-    //Client *user = service->GetClient(username);
-    //string name = user->GetChannelName(user->GetChannelID());
+
+    if (data.empty() || Protection(data))
+    {
+        ERR_NORECIPIENT_411(username, UserSocket);
+        return;
+    }
+
     List = GetSendingList(data, msg);
+    if (msg.empty() || Protection(msg))
+    {
+        ERR_NOTEXTTOSEND_412(username, UserSocket);
+        return ;
+    }
     for(size_t i = 0; i < List.size(); i++)
     {
         if (List[i][0] == '#')
@@ -437,20 +494,6 @@ void Database::StartCommunication(int UserSocket, string data)
         else
             service->PRIVMessages(msg, List[i], username);
     }
-    
-    /*
-    size_t colonPos = data.find(' ');
-    name = data.substr(0, colonPos);
-    if (colonPos != std::string::npos)
-        msg = data.substr(colonPos + 1);
-    if (name == "QUIT")
-    {
-        NoticeUserLogout(msg, username);
-        user->ChannelLogout(msg);
-    }
-    else
-        service->DisplayMessages(msg, name, username);
-    */
 }
 
 void Database::DisplayMessages(string data, string name, string username, int UserSocket)
@@ -469,10 +512,8 @@ void Database::DisplayMessages(string data, string name, string username, int Us
     }
     if (is_out == undefine)
     {
-        Respond.str("");
-        Respond << RED << "@" + username << BLUE << " Not In [#" << name << "]" << RESET << std::endl;
-        output = Respond.str();
-        send(socketFailed, output.c_str(), output.length(), 0);
+        ERR_NOSUCHCHANNEL_403(username, name, UserSocket);
+        return ;
     }
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end() && is_out; ++it)
     {
@@ -488,10 +529,6 @@ void Database::DisplayMessages(string data, string name, string username, int Us
         }
     }
 }
-
-/*
-:dan!~h@localhost PRIVMSG #coolpeople :
-*/
 
 void Database::AddChannel(const std::string& name, Channel* channel)
 {

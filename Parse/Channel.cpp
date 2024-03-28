@@ -6,8 +6,8 @@ Channel::Channel(std::string name, std::string key)
 {
 	this->_name = name;
     this->_key = key;
-    this->_limit = 2; // -1 => not set , 2 => Only for test
-    this->_invite_only = 1; // For test only
+    this->_limit = -1; // -1 => not set , 2 => Only for test
+    this->_invite_only = 0; // (true or false) 1 => For test only
 }
 
 bool Channel::isInviteOnly()
@@ -115,7 +115,7 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)
-        Respond << RESET << "@" + _admins[i] + " ";
+        Respond << "@" + _admins[i] + " ";
     Respond << std::endl;
     output = Respond.str();
     send(Sokect, output.c_str(), output.length(), 0);
