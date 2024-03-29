@@ -1,6 +1,7 @@
 #ifndef CHANNEL_HPP
 #define CHANNEL_HPP
 
+#include "Database.hpp"
 #include <iostream>
 #include <sstream>
 #include <vector>
@@ -25,54 +26,63 @@
 
 typedef std::vector<std::string> Container;
 
+class Client;
+class Database;
+
 class Channel 
 {
 	private:
 		std::string _key;
-		std::string _symbol;
 		std::string _name;
 		std::string _topic;
 
 		Container _members;
 		Container _admins;
 		Container _invited;
-		Container _Banned;
 
 		int _limit;
 
 		bool _invite_only;
-		//bool _protectedTopic;
+		bool _protectedTopic;
 
 	public:
 
 		~Channel();
 		Channel(std::string name, std::string key);
-	
-		int GetLimit(void);
-		int CountMembers(void);
-		int CountInvited(void);
-		int CountAdmins(void);
 
-		bool isInviteOnly();
 		bool FirstCreation(void);
-		bool UserIsBanned(std::string username);
 
 		std::string GetSecretKey();
 		std::string ChannelName(void);
-		std::string GetSymbol(void);
-
-		void BanMember(std::string username);
-		void SetLimit(int limited_to);
-		void SetSymbol(std::string status);
+	
 		void addMember(std::string member);
-		void addAdmin(std::string member);
 		void MembertoAdmin(std::string member);
-		void UsersInChannel(int Sokect, std::string username, std::string IP);
+		void addAdmin(std::string member);
+		void UsersInChannel(int Sokect, std::string username);
+
+
+
+		void handleTopic(std::string topic);
+		std::string getTopic();
+		void setTopic(std::string topic);
+
+		void setUserLimit(int limit);
+		int getUserLimit(void);
+
+		void setKey(std::string key);
+		std::string getKey(void);
+		
+		bool isInviteOnly();
 		void setInviteOnly(bool invite_only);
 
 
+		void setProtectedTopic(bool protectedTopic);
+		bool isProtectedTopic();
 
-
+		int DoesClientExist(const std::string name);
+		void    BroadCastMessage(std::string broadcast);
+	
+		void	SetOperator(std::string name, bool Mode);	
 
 
         /*
@@ -90,6 +100,8 @@ class Channel
 		// void	setUserMode(std::string mode);
 		void setKey(std::string key);
 		std::string getKey(void);
+		void setInviteOnly(bool invite_only);
+		bool isInviteOnly();
 		void setProtectedTopic(bool protectedTopic);
 		bool isProtectedTopic();
         */

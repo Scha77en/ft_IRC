@@ -42,8 +42,6 @@ class Database
 		Database() {}
 
 		static Database* DB;
-
-		struct in_addr server_ip;
 		
 		SYSTEM_CLIENT clients;
 		SYSTEM_CHANNEL channels;
@@ -55,11 +53,9 @@ class Database
 
 		~Database();
 		static Database *GetInstance(void);
-
 		
         
 		void	PrintChannels();
-		void 	SetServerIP(struct in_addr host);
 		void    AddClient(const std::string& name);
         void    ParseUserInput(string data, int UserSocket);
         void    DisplayMessages(int UserSocket, string data);
@@ -68,14 +64,13 @@ class Database
         void    HandelMultiChannel(string data, int UserSocket);
 		void    AddChannel(const std::string& name, Channel* channel);
         void    DisplayMessages(string data, string name, string username);
-        void 	NoticeUserHasJoined(string name, string username, int UserSocket, string IP);
+        void 	NoticeUserHasJoined(string name, string username, int UserSocket);
         void    NoticeUserLogout(string name, string username);
 		void 	PRIVMessages(string data, string name, string username);
 
         Client* GetClient(const std::string& name);
 		Channel* GetChannel(const std::string& name);
 
-		string GetServerIP(void);
         string GetUserBySocket(int UserSocket);
 
 		int GetUserSocket(string name);
@@ -87,13 +82,16 @@ class Database
 		//Client* GetClient(const std::string& name);
 
 		//void	parce_user_data(char buffer[1024]);
-		//void	handleTopic(char buffer[1024]);
-		//void	handleMode(char buffer[1024]);
+		void	HandleTopic(std::string data, int UserSocket);
+		void	HandleMode(std::string data, int UserSocket);
+	
+		std::string ExtractChannelName(std::string data);
+		std::string ExtractTopic(std::string data, bool *two_dots);
 		// void	handleJoin(char buffer[1024]);
 
 		//void	getName(std::string name);
 
-		//void applyModeChange(char mode, bool addMode, Channel *channel);
+		void applyModeChange(char mode, bool addMode, Channel *channel, std::string UserName);
 };
 
 #endif

@@ -95,8 +95,3 @@ It allows you to control various aspects of socket behavior .
 The select() system call in Linux is a mechanism for monitoring multiple
 file descriptors, waiting until one or more of the file descriptors become
 "ready" for some class of I/O operation 
-
-
-PASS 369
-NICK atye3
-USER tyue
