@@ -5,7 +5,7 @@ Client::Client()
     this->online = 0;
     this->channelID = -1;
     this->socket = 0;
-    this->limited_channels = 2;
+    this->limited_channels = 0;
 }
 
 Client::~Client() {}
@@ -37,6 +37,8 @@ string Client::GetPass(void)
 
 bool Client::LimitedChannels(void)
 {
+    if (limited_channels <= 0)
+        return (undefine);
     return ((int)_channels.size() == limited_channels);
 }
 
@@ -106,6 +108,22 @@ bool Client::ChannelList(string name)
     }
     return undefine;
 }
+
+bool Client::DeleteChannel(string name)
+{
+    std::vector<std::string>::iterator it;
+
+    for (it = _channels.begin(); it != _channels.end();++it)
+    {
+        if (*it == name)
+        {
+            _channels.erase(it);
+            return (1);
+        }
+    }
+    return undefine;
+}
+
 
 void Client::ActiveInChannel(string name)
 {

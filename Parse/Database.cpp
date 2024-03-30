@@ -57,7 +57,7 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
             if (socket > undefine)
             {
                 Respond.str("");
-                Respond << ":" + username + "!~" + username.substr(0,1) +  "@" + IP + " JOIN #" + name << std::endl;
+                Respond << ":" + username + "!~" + username.substr(0,1) +  "@" + IP + " JOIN " + name << std::endl;
                 output = Respond.str();
                 send(socket, output.c_str(), output.length(), 0);
             }
@@ -73,7 +73,7 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
         }
     }
     Respond.str("");
-    Respond << ":" + GetServerIP() + " 366 " + username << " #" + name + " :End of /NAMES list." << RESET << std::endl;
+    Respond << ":" + GetServerIP() + " 366 " + username << " " + name + " :End of /NAMES list." << std::endl;
     output = Respond.str();
     send(UserSocket, output.c_str(), output.length(), 0);
 }
@@ -104,6 +104,20 @@ void ExtractTwoRnages(string data, string &ch, string &ky)
     std::stringstream Process(data);
 
     Process >> ch >> ky;
+}
+
+void RemoveCharacter(int ASCII, string &target)
+{
+    int x = 0;
+    while (target[x])
+    {
+        if ((int)target[x] == ASCII)
+        {
+            target[x] = '\0';
+            break;
+        }
+        x++;
+    }
 }
 
 STORE TokenRangeExtract(string data)
@@ -140,13 +154,19 @@ SYSTEM_KEYVAL parseChannels(string &input, int SK, string username)
     RangeChannels = TokenRangeExtract(ch);
     RangeKeys = TokenRangeExtract(ky);
 
+    /*
+    RangeChannels.erase(std::remove(RangeChannels.begin(), RangeChannels.end(), '\x05'), RangeChannels.end());
+    RangeChannels.shrink_to_fit();
+    RangeKeys.erase(std::remove(RangeKeys.begin(), RangeKeys.end(), '\x05'), RangeKeys.end());
+    RangeKeys.shrink_to_fit();
+    */
     for (size_t i = 0; i < RangeChannels.size(); ++i) 
     {
         if (i < RangeKeys.size())
         {
             if (RangeChannels[i][0] == '#')
             {
-                RangeChannels[i].erase(RangeChannels[i].begin());
+                std::cout << "lengh : " << RangeChannels[i].length() << std::endl;
                 result.push_back(std::make_pair(RangeChannels[i], RangeKeys[i]));
             }
             else
@@ -159,7 +179,6 @@ SYSTEM_KEYVAL parseChannels(string &input, int SK, string username)
         {
             if (RangeChannels[i][0] == '#')
             {
-                RangeChannels[i].erase(RangeChannels[i].begin());
                 result.push_back(std::make_pair(RangeChannels[i], ""));
             }
             else
@@ -260,8 +279,6 @@ void ERR_NEEDMOREPARAMS_461(string name, int UserSocket, string username)
 void Database::HandelMultiChannel(string data, int UserSocket)
 {
     string args;
-    string output;
-    std::stringstream Respond;
     SYSTEM_KEYVAL::iterator it;
 
     Database *service = Database::GetInstance();
@@ -269,36 +286,39 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     string username = service->GetUserBySocket(UserSocket);
     Client *user = service->GetClient(username);
 
-    size_t colonPos = data.find(' ');
-
-    if (colonPos != std::string::npos)
-        args = data.substr(colonPos + 1);
-    if (Protection(args) || args.empty())
+    if (Protection(data) || data.empty())
     {
         ERR_NEEDMOREPARAMS_461("JOIN",UserSocket, username);
         return ;
     }
-    if (Potection403(args))
-    {
-        xProtection403(args, UserSocket, username);
-        return ;
-    }
     string IP = user->GetClientIP();
-    SYSTEM_KEYVAL channels = parseChannels(args, UserSocket, username);
-    for (it = channels.begin(); it != channels.end();it++)
+    SYSTEM_KEYVAL ProcessChannels = parseChannels(data, UserSocket, username);
+    for (it = ProcessChannels.begin(); it != ProcessChannels.end();it++)
     {
+        //it->first.erase(std::remove(it->first.begin(), it->first.end(), '\x05'), it->first.end());
+        //it->first.shrink_to_fit();
+        string EXIST(it->first);
+
+    
+        if (EXIST.empty() || EXIST.back() != '\0')
+            EXIST.push_back('\0');
         if (user->LimitedChannels())
         {
-            ERR_TOOMANYCHANNELS_405(it->first, UserSocket, username);
+            ERR_TOOMANYCHANNELS_405(EXIST, UserSocket, username);
             break;
         }
-        Channel *channel = service->GetChannel(it->first);
+        if (user->ChannelList(EXIST))
+        {
+            std::cout << "ALREADY IN CHANNEL : #" <<  EXIST << std::endl;
+            continue;
+        }
+        Channel *channel = service->GetChannel(EXIST);
         if (channel != undefine)
         {
             //channel->BanMember("username"); // Delete after for test Only !
             if (channel->GetSecretKey() != it->second)
             {
-                Protection475(it->first, username, UserSocket, IP);
+                Protection475(EXIST, username, UserSocket, IP);
                 continue;
             }
             if (channel->GetLimit() != -1)
@@ -306,46 +326,37 @@ void Database::HandelMultiChannel(string data, int UserSocket)
                 bool OutOfBound = channel->CountInvited() + channel->CountMembers() + channel->CountAdmins() + 1 > channel->GetLimit();
                 if (OutOfBound)
                 {
-                    Protection471(it->first, UserSocket, username, IP);
+                    Protection471(EXIST, UserSocket, username, IP);
                     continue;
                 }
             }
             if (channel->UserIsBanned(username))
             {
-                Protection474(it->first, UserSocket, username, IP);
+                Protection474(EXIST, UserSocket, username, IP);
                 continue;
             }
             if (channel->isInviteOnly())
             {
-                Protection473(it->first, UserSocket, username, IP);
+                Protection473(EXIST, UserSocket, username, IP);
                 continue;
             }
         }
         if (channel == undefine)
         {
-            channel = new Channel(it->first, it->second);
+            channel = new Channel(EXIST, it->second);
             channel->SetSymbol("=");
-            service->AddChannel(it->first, channel);
+            service->AddChannel(EXIST, channel);
         }
         else
             channel->SetSymbol("@");
-        user->SaveChannel(it->first);
-        user->ActiveInChannel(it->first);
+        user->SaveChannel(EXIST);
         if (channel->FirstCreation())
             channel->addAdmin(username);
         else
             channel->addMember(username);
-        NoticeUserHasJoined(it->first, username, UserSocket, IP);
+        NoticeUserHasJoined(EXIST, username, UserSocket, IP);
     }
 }
-/*
-bool Channel::UserIsBanned(std::string username)
-
-void Channel::BanMember(std::string username)
-421) 
-  "<client> <command> :Unknown command"
-
-*/
 
 void Protection421(string command, int UserSocket, string username)
 {
@@ -357,6 +368,74 @@ void Protection403(string command, int UserSocket, string username)
 {
     string output = ":irc.1337.com 403 " + username + " " + command + " :Unknown command\n";
     send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void Database::NoticeUserPART(string ChannelName, string username, int UserSocket, string IP)
+{
+    string output;
+    std::stringstream Respond;
+
+    Database *service = Database::GetInstance();
+    Client *user = service->GetClient(username);
+
+    output = ":" + username + "!~" + user->GetName() +  "@" + IP + " PART #" + ChannelName + "\n";
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        if (it->second->ChannelList(ChannelName))
+        {
+            int socket = it->second->GetSocket();
+            if (socket > undefine)
+                send(socket, output.c_str(), output.length(), 0);
+        }
+    }
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void ERR_NOTONCHANNEL_442(string username, int UserSocket, string ChannelName)
+{
+    string output = ":irc.1337.com 442 " + username + " " + ChannelName + " :You're not on that channel\n";
+    send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+void Database::HandelMultiPART(string data, int UserSocket)
+{
+    string args;
+    SYSTEM_KEYVAL::iterator it;
+
+    Database *service = Database::GetInstance();
+    string username = service->GetUserBySocket(UserSocket);
+    Client *user = service->GetClient(username);
+
+    if (Protection(data) || data.empty())
+    {
+        ERR_NEEDMOREPARAMS_461("PART",UserSocket, username);
+        return ;
+    }
+    bool is_inChannel = undefine;
+    string IP = user->GetClientIP();
+    SYSTEM_KEYVAL ProcessChannels = parseChannels(data, UserSocket, username);
+    for (it = ProcessChannels.begin(); it != ProcessChannels.end();it++)
+    {
+        //std::cout << "-> (CH) : [" + it->first + "]\n";
+        //std::cout << "-> (KY): [" + it->second + "]\n";
+
+		SYSTEM_CHANNEL::iterator xit;
+        for (xit = service->channels.begin(); xit != service->channels.end() && !is_inChannel; ++xit)
+        {
+            if (xit->first == it->first)
+            {
+                is_inChannel = 1;
+                xit->second->PartFromChannels(username);
+            }
+        }
+        if (user->DeleteChannel(it->first))
+            NoticeUserPART(it->first, username, UserSocket, IP);
+        else if (is_inChannel == undefine)
+            ERR_NOSUCHCHANNEL_403(username, it->first, UserSocket);
+        else
+            ERR_NOTONCHANNEL_442(username, UserSocket, it->first);
+        is_inChannel = undefine;
+    }
 }
 
 void Database::ParseUserInput(string data, int UserSocket)
@@ -371,9 +450,11 @@ void Database::ParseUserInput(string data, int UserSocket)
     //Client *user = service->GetClient(username);
 
     if (command == "JOIN" || command == "join")
-        HandelMultiChannel(data, UserSocket);
+        HandelMultiChannel(data.substr(4), UserSocket);
     else if (command == "PRIVMSG" || command == "privmsg")
         service->StartCommunication(UserSocket, data.substr(8));
+    else if (command == "PART" || command == "part")
+        return service->HandelMultiPART(data.substr(4), UserSocket);
     else if (command == "MODE" || command == "mode" || command == "PONG" || command == "pong")
         return ;
     else
@@ -423,7 +504,7 @@ void ERR_CANNOTSENDTOCHAN_404(string username, string target, int UserSocket)
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
-void ERR_NOSUCHNICK(string username, string target, int UserSocket)
+void ERR_NOSUCHNICK_401(string username, string target, int UserSocket)
 {
     string output = ":irc.1337.com 401 " + username + " " + target + " :No such nick/channel\n";
     send(UserSocket, output.c_str(), output.length(), 0);
@@ -460,7 +541,7 @@ void Database::PRIVMessages(string data, string name, string username)
     }
     if (socketFailed == undefine)
     {
-        ERR_NOSUCHNICK(username, name, senderSocket);
+        ERR_NOSUCHNICK_401(username, name, senderSocket);
         return ;
     }
     string output = ":"+ username + "!~" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
@@ -530,8 +611,14 @@ void Database::DisplayMessages(string data, string name, string username, int Us
     }
 }
 
-void Database::AddChannel(const std::string& name, Channel* channel)
+void Database::AddChannel( std::string& name, Channel* channel)
 {
+    /*
+    name.erase(std::remove(name.begin(), name.end(), '\x05'), name.end());
+    name.shrink_to_fit();
+    */
+    //name[name.length() - 1] = '\0';
+    //std::cout <<name.length() << std::endl; 
 	channels[name] = channel;
 	//PrintChannels();
 }
@@ -563,12 +650,53 @@ int Database::GetUserSocket(string name)
     return (undefine);
 }
 
-Channel* Database::GetChannel(const std::string& name)
+Channel* Database::GetChannel(std::string name)
 {
+    
     for (SYSTEM_CHANNEL::const_iterator it = channels.begin(); it != channels.end(); ++it)
     {
-        if (name == it->first)
-            return channels[name];
+        string EXIST(it->first);
+
+    
+        if (EXIST.empty() || EXIST.back() != '\0')
+            EXIST.push_back('\0');
+        // Check if the string contains a null terminator (not needed for std::string)
+        /*
+        if (name.back() == '\0')
+            std::cout << "name contains a null terminator" << std::endl;
+        else
+            std::cout << "name does not contain a null terminator" << std::endl;
+        if (EXIST.back() == '\0')
+            std::cout << "EXIST contains a null terminator" << std::endl;
+        else
+            std::cout << "EXIST does not contain a null terminator" << std::endl;
+
+        name.erase(std::remove(name.begin(), name.end(), '\x05'), name.end());
+        name.shrink_to_fit();
+        std::cout << "+[" << name[name.length()] << "] | [" << name.length() << "]"<< std::endl;
+        std::cout << "-[" << (int)name[name.length() - 1] << "] | [" << name.length() << "]"<< std::endl;
+        */
+        int x = 0;
+        while (x < (int)name.length())
+        {
+            std::cout << x << " - " << (int)name[x] << std::endl;
+            std::cout << x << " - " << name[x] << std::endl;
+            x++;
+        }
+        std::cout << "------------------------------------ " << std::endl;
+        x = 0;
+        while (x < (int)EXIST.length())
+        {
+            std::cout << x << " - " << (int)EXIST[x] << std::endl;
+            std::cout << x << " - " << EXIST[x] << std::endl;
+            x++;
+        }
+
+        std::cout << "[" + name + "][" + EXIST +"] # [" << name.length() << "] [" << EXIST.length() << "]" << std::endl;
+        if (name == EXIST)
+            return channels[EXIST];
     }
 	return undefine;
 }
+
+

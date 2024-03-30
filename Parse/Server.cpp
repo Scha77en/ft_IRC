@@ -36,10 +36,10 @@ bool Server::GetDataInformation(int NewClientSocket, string &command, string &ou
     for (size_t i = 0; i < strlen(charPtr); ++i)
         charPtr[i] = std::toupper(charPtr[i]);
     string UpperCheck(charPtr);
-    std::cout << "command => [" + UpperCheck + "]" << std::endl;
+    //std::cout << "command => [" + UpperCheck + "]" << std::endl;
     if (command != UpperCheck || Received.empty())
         return undefine;
-    std::cout << "Value => [" + Received + "]" << std::endl;
+    //std::cout << "Value => [" + Received + "]" << std::endl;
     output = Received;
     return (1);
 }
@@ -128,8 +128,17 @@ void Server::StartSession()
                     BUFFER[bytes_received] = '\0';
                     string Received(BUFFER);
                     RemoveNewLines(Received);
-                    std::cout << BLUE << "# Received : " << RESET << "[" << Received << "]" << std::endl;
-                    //std::cout << "Nickname : [" + username + "]" << std::endl;
+                    int x = 0;
+                    while (Received[x])
+                    {
+                        if ((int)Received[x] == 13)
+                        {
+                            Received[x] = '\0';
+                            break;
+                        }
+                        x++;
+                    }
+                    std::cout <<  "# Received : [" + Received + "]" << std::endl;
                     info->ParseUserInput(Received, fds[i].fd);
                 }
 
@@ -227,7 +236,7 @@ bool Server::ServerCreate()
     }
     addrlen = sizeof(server_addr);
     //fcntl(server_socket, F_SETFL, O_NONBLOCK);
-    std::cout << BLUE << "Server listening on port " << PORT << "...\n";
+    std::cout << BLUE << "Server listening on port " << PORT << "...\n" << RESET;
     fds[0].fd = server_socket;
     fds[0].events = POLLIN;
     for (int i = 1; i < MAX_CLIENTS; ++i) 

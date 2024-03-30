@@ -66,35 +66,29 @@ class Database
         void    ListUsersChannels(string data, int UserSocket);
         void    StartCommunication(int UserSocket, string data);
         void    HandelMultiChannel(string data, int UserSocket);
-		void    AddChannel(const std::string& name, Channel* channel);
+		void    AddChannel(std::string& name, Channel* channel);
         void    DisplayMessages(string data, string name, string username, int UserSocket);
         void 	NoticeUserHasJoined(string name, string username, int UserSocket, string IP);
         void    NoticeUserLogout(string name, string username);
 		void 	PRIVMessages(string data, string name, string username);
+		void 	HandelMultiPART(string data, int UserSocket);
+		void 	NoticeUserPART(string ChannelName, string username, int UserSocket, string IP);
 
         Client* GetClient(const std::string& name);
-		Channel* GetChannel(const std::string& name);
+		Channel* GetChannel(std::string name);
 
 		string GetServerIP(void);
         string GetUserBySocket(int UserSocket);
 
 		int GetUserSocket(string name);
-
-	
-		//void RemoveChannel(const std::string& name);
-
-		//void RemoveClient(const std::string& name);
-		//Client* GetClient(const std::string& name);
-
-		//void	parce_user_data(char buffer[1024]);
-		//void	handleTopic(char buffer[1024]);
-		//void	handleMode(char buffer[1024]);
-		// void	handleJoin(char buffer[1024]);
-
-		//void	getName(std::string name);
-
-		//void applyModeChange(char mode, bool addMode, Channel *channel);
 };
+
+void ERR_NORECIPIENT_411(string username, int UserSocket);
+void ERR_NOSUCHNICK_401(string username, string target, int UserSocket);
+void ERR_NOSUCHCHANNEL_403(string username, string target, int UserSocket);
+void RPL_AWAY_301(string username, string target, string msg ,int UserSocket);
+void ERR_CANNOTSENDTOCHAN_404(string username, string target, int UserSocket);
+void ERR_NOTONCHANNEL_442(string username, int UserSocket, string ChannelName);
 
 #endif
 

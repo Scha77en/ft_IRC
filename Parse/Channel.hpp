@@ -69,30 +69,8 @@ class Channel
 		void MembertoAdmin(std::string member);
 		void UsersInChannel(int Sokect, std::string username, std::string IP);
 		void setInviteOnly(bool invite_only);
+		void PartFromChannels(std::string member);
 
-
-
-
-
-
-        /*
-		void parce_user_data(char buffer[1024]);
-		void handleTopic(char buffer[1024]);
-		// void	handleJoin(char buffer[1024]);
-
-		std::string getTopic();
-		void setTopic(std::string topic);
-		std::string getName();
-		void setName(std::string name);
-
-		void setUserLimit(int limit);
-		int getUserLimit(void);
-		// void	setUserMode(std::string mode);
-		void setKey(std::string key);
-		std::string getKey(void);
-		void setProtectedTopic(bool protectedTopic);
-		bool isProtectedTopic();
-        */
 };
 
 #endif

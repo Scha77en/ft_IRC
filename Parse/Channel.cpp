@@ -79,6 +79,24 @@ void Channel::MembertoAdmin(std::string member)
     }
 }
 
+void Channel::PartFromChannels(std::string member)
+{
+    Container::iterator it;
+    
+    it = std::find(_members.begin(), _members.end(), member);
+    if (it != _members.end())
+        _members.erase(it);
+    
+    it = std::find(_admins.begin(), _admins.end(), member);
+    if (it != _admins.end())
+        _admins.erase(it);
+    
+    it = std::find(_invited.begin(), _invited.end(), member);
+    if (it != _invited.end())
+        _invited.erase(it);
+
+}
+
 std::string Channel::GetSecretKey()
 {
     return this->_key;
@@ -111,7 +129,7 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     std::string output;
     std::stringstream Respond;
 
-    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << "#" + ChannelName() + " :";
+    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << ChannelName() + " :";
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)
