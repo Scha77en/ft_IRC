@@ -47,22 +47,22 @@ class Channel
 
 	public:
 
-		~Channel();
-		Channel(std::string name, std::string key);
+		// ~Channel();
+		// Channel(std::string name, std::string key);
 
-		bool FirstCreation(void);
+		// bool FirstCreation(void);
 
-		std::string GetSecretKey();
-		std::string ChannelName(void);
+		// std::string GetSecretKey();
+		// std::string ChannelName(void);
 	
-		void addMember(std::string member);
-		void MembertoAdmin(std::string member);
-		void addAdmin(std::string member);
-		void UsersInChannel(int Sokect, std::string username);
+		// void addMember(std::string member);
+		// void MembertoAdmin(std::string member);
+		// void addAdmin(std::string member);
+		// void UsersInChannel(int Sokect, std::string username);
 
 
 
-		void handleTopic(std::string topic);
+		// void handleTopic(std::string topic);
 		std::string getTopic();
 		void setTopic(std::string topic);
 
@@ -72,8 +72,8 @@ class Channel
 		void setKey(std::string key);
 		std::string getKey(void);
 		
-		bool isInviteOnly();
-		void setInviteOnly(bool invite_only);
+		// bool isInviteOnly();
+		// void setInviteOnly(bool invite_only);
 
 
 		void setProtectedTopic(bool protectedTopic);

@@ -6,8 +6,8 @@ Channel::Channel(std::string name, std::string key)
 {
 	this->_name = name;
     this->_key = key;
-    this->_limit = 2; // -1 => not set , 2 => Only for test
-    this->_invite_only = 1; // For test only
+    this->_limit = -1; // -1 => not set , 2 => Only for test
+    this->_invite_only = 0; // (true or false) 1 => For test only
 }
 
 bool Channel::isInviteOnly()
@@ -115,8 +115,129 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)
-        Respond << RESET << "@" + _admins[i] + " ";
+        Respond << "@" + _admins[i] + " ";
     Respond << std::endl;
     output = Respond.str();
     send(Sokect, output.c_str(), output.length(), 0);
+}
+
+// ***************************************************************************
+
+std::string Channel::getTopic()
+{
+    return this->_topic;
+}
+
+void Channel::setTopic(std::string topic)
+{
+    this->_topic = topic;
+}
+
+void Channel::setUserLimit(int limit)
+{
+    this->_limit = limit;
+}
+
+int Channel::getUserLimit(void)
+{
+    return this->_limit;
+}
+
+void Channel::setKey(std::string key)
+{
+    this->_key = key;
+}
+
+std::string Channel::getKey(void)
+{
+    return this->_key;
+}
+
+void Channel::setProtectedTopic(bool protectedTopic)
+{
+    this->_protectedTopic = protectedTopic;
+}
+
+bool Channel::isProtectedTopic()
+{
+    return this->_protectedTopic;
+}
+
+int Channel::DoesClientExist(const std::string name)
+{
+    if (std::find(_admins.begin(), _admins.end(), name) != _admins.end())
+        return (1);
+    else if (std::find(_members.begin(), _members.end(), name) != _members.end())
+        return (2);
+    else if (std::find(_invited.begin(), _invited.end(), name) != _invited.end())
+        return (3);
+    return (0);
+}
+
+void Channel::BroadCastMessage(std::string broadcast) {
+    // Iterate over members
+    for (Container::const_iterator it = _members.begin(); it != _members.end(); ++it) {
+        const std::string& member = *it;
+
+        // Get the client from the database
+        Client* client = Database::GetInstance()->GetClient(member);
+        if (client != NULL) {
+            // Get the client's socket
+            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+
+            // Send the message to the client
+            send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
+        }
+    }
+
+    // Iterate over admins
+    for (Container::const_iterator it = _admins.begin(); it != _admins.end(); ++it) {
+        const std::string& admin = *it;
+
+        // Get the client from the database
+        Client* client = Database::GetInstance()->GetClient(admin);
+        if (client != NULL) {
+            // Get the client's socket
+            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+
+            // Send the message to the client
+            send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
+        }
+    }
+
+    // Iterate over invited
+    for (Container::const_iterator it = _invited.begin(); it != _invited.end(); ++it) {
+        const std::string& invited = *it;
+
+        // Get the client from the database
+        Client* client = Database::GetInstance()->GetClient(invited);
+        if (client != NULL) {
+            // Get the client's socket
+            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+
+            // Send the message to the client
+            send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
+        }
+    }
+}
+
+void Channel::SetOperator(std::string name, bool Mode)
+{
+    if (Mode == 1) {
+        if (std::find(_admins.begin(), _admins.end(), name) == _admins.end())
+            _admins.push_back(name);
+        if (std::find(_members.begin(), _members.end(), name) != _members.end())
+            _members.erase(std::remove(_members.begin(), _members.end(), name), _members.end());
+        if (std::find(_invited.begin(), _invited.end(), name) != _invited.end())
+            _invited.erase(std::remove(_invited.begin(), _invited.end(), name), _invited.end());
+    }
+    else
+    {
+        if (std::find(_members.begin(), _members.end(), name) == _members.end())
+            _members.push_back(name);
+        if (std::find(_admins.begin(), _admins.end(), name) != _admins.end())
+            _admins.erase(std::remove(_admins.begin(), _admins.end(), name), _admins.end());
+        if (std::find(_invited.begin(), _invited.end(), name) != _invited.end())
+            _invited.erase(std::remove(_invited.begin(), _invited.end(), name), _invited.end());
+    }
 }

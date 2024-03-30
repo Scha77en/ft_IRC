@@ -22,6 +22,7 @@ class Client
 
         int socket;
         int channelID;
+        int limited_channels;
 
         bool online;
 
@@ -41,6 +42,8 @@ class Client
 
         bool GetConnection();
         bool ChannelList(string name);
+        bool LogoutFromAllChannels();
+        bool LimitedChannels(void);
 
         string GetClientIP(void);
         string GetUsername(void);
@@ -57,6 +60,8 @@ class Client
         void ActiveInChannel(std::string name);
         void ChannelLogout(std::string name);
         void NewClientIP(struct in_addr ClientIP);
+
+        std::vector<std::string> GetAllChannels(void);
 
 };
 

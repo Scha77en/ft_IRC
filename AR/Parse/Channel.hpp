@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <sys/socket.h>
 #include <utility> 
+#include "Database.hpp"
 
 #define BLACK "\033[1;30m"
 #define RED "\033[1;31m"
@@ -24,6 +25,9 @@
 #define RESET "\033[0m"
 
 typedef std::vector<std::string> Container;
+
+class Client;
+class Database;
 
 class Channel 
 {
@@ -41,7 +45,7 @@ class Channel
 		int _limit;
 
 		bool _invite_only;
-		//bool _protectedTopic;
+		bool _protectedTopic;
 
 	public:
 
@@ -70,10 +74,22 @@ class Channel
 		void UsersInChannel(int Sokect, std::string username, std::string IP);
 		void setInviteOnly(bool invite_only);
 
+		std::string getTopic();
+		void setTopic(std::string topic);
 
+		void setUserLimit(int limit);
+		int getUserLimit(void);
 
+		void setKey(std::string key);
+		std::string getKey(void);
 
+		void setProtectedTopic(bool protectedTopic);
+		bool isProtectedTopic();
 
+		int DoesClientExist(const std::string name);
+		void    BroadCastMessage(std::string broadcast);
+
+		void	SetOperator(std::string name, bool Mode);
 
         /*
 		void parce_user_data(char buffer[1024]);
