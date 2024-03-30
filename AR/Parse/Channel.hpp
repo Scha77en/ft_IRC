@@ -77,10 +77,10 @@ class Channel
 		std::string getTopic();
 		void setTopic(std::string topic);
 
-		void setUserLimit(int limit);
+		void setUserLimit(std::vector<std::string> &m_args, std::string UserName, bool addMode);
 		int getUserLimit(void);
 
-		void setKey(std::string key);
+		void setKey(std::vector<std::string> &m_args, bool addMode, std::string UserName);
 		std::string getKey(void);
 
 		void setProtectedTopic(bool protectedTopic);
@@ -89,8 +89,9 @@ class Channel
 		int DoesClientExist(const std::string name);
 		void    BroadCastMessage(std::string broadcast);
 
-		void	SetOperator(std::string name, bool Mode);
+		void	SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args);
 
+		std::string GetModes(void);
         /*
 		void parce_user_data(char buffer[1024]);
 		void handleTopic(char buffer[1024]);

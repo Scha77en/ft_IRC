@@ -1,4 +1,5 @@
 #include "Channel.hpp"
+#include "Database.hpp"
 
 Channel::~Channel() {}
 
@@ -133,9 +134,24 @@ void Channel::setTopic(std::string topic)
     this->_topic = topic;
 }
 
-void Channel::setUserLimit(int limit)
+void Channel::setUserLimit(std::vector<std::string> &m_args, std::string UserName, bool addMode)
 {
+    if (!addMode) {
+        this->_limit = -1;
+        return ;
+    }
+    int UserSocket = Database::GetInstance()->GetUserSocket(UserName);
+    if (m_args.size() == 0)
+    {
+        std::string error = ERR_INVALIDMODEPARAM_L(UserName, ChannelName(), 'l');
+        send(UserSocket, error.c_str(), error.length(), 0);
+        return ;
+    }
+    int limit = std::stoi(m_args[0]);
+    if (limit < 0)
+        limit = -1;
     this->_limit = limit;
+     m_args.erase(m_args.begin());
 }
 
 int Channel::getUserLimit(void)
@@ -143,9 +159,22 @@ int Channel::getUserLimit(void)
     return this->_limit;
 }
 
-void Channel::setKey(std::string key)
+void Channel::setKey(std::vector<std::string> &m_args, bool addMode, std::string UserName)
 {
+    if (!addMode) {
+        this->_key = "";
+        return ;
+    }
+    int UserSocket = Database::GetInstance()->GetUserSocket(UserName);
+    if (m_args.size() == 0)
+    {
+        std::string error = ERR_INVALIDMODEPARAM_K(UserName, ChannelName(), 'k');
+        send(UserSocket, error.c_str(), error.length(), 0);
+        return ;
+    }
+    std::string key = m_args[0];
     this->_key = key;
+    m_args.erase(m_args.begin());
 }
 
 std::string Channel::getKey(void)
@@ -221,23 +250,52 @@ void Channel::BroadCastMessage(std::string broadcast) {
     }
 }
 
-void Channel::SetOperator(std::string name, bool Mode)
+void Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args)
 {
+    Database *db = Database::GetInstance();
+    Client *client = Database::GetInstance()->GetClient(name);
+    int UserSocket = client->GetSocket();
+    if (m_args.size() == 0)
+    {
+        std::string error = ERR_INVALIDMODEPARAM_O(name, ChannelName(), 'o');
+        send(UserSocket, error.c_str(), error.length(), 0);
+        return ;
+    }
+    std::string target = m_args[0];
+    int t_state = DoesClientExist(target);
+    if (t_state == 0) {
+        db->ERR_442_NOTONCHANNEL(target, ChannelName(), UserSocket);
+        return;
+    }
     if (Mode == 1) {
-        if (std::find(_admins.begin(), _admins.end(), name) == _admins.end())
-            _admins.push_back(name);
-        if (std::find(_members.begin(), _members.end(), name) != _members.end())
-            _members.erase(std::remove(_members.begin(), _members.end(), name), _members.end());
-        if (std::find(_invited.begin(), _invited.end(), name) != _invited.end())
-            _invited.erase(std::remove(_invited.begin(), _invited.end(), name), _invited.end());
+        if (std::find(_admins.begin(), _admins.end(), target) == _admins.end())
+            _admins.push_back(target);
+        if (std::find(_members.begin(), _members.end(), target) != _members.end())
+            _members.erase(std::remove(_members.begin(), _members.end(), target), _members.end());
+        if (std::find(_invited.begin(), _invited.end(), target) != _invited.end())
+            _invited.erase(std::remove(_invited.begin(), _invited.end(), target), _invited.end());
     }
     else
     {
-        if (std::find(_members.begin(), _members.end(), name) == _members.end())
-            _members.push_back(name);
-        if (std::find(_admins.begin(), _admins.end(), name) != _admins.end())
-            _admins.erase(std::remove(_admins.begin(), _admins.end(), name), _admins.end());
-        if (std::find(_invited.begin(), _invited.end(), name) != _invited.end())
-            _invited.erase(std::remove(_invited.begin(), _invited.end(), name), _invited.end());
+        if (std::find(_members.begin(), _members.end(), target) == _members.end())
+            _members.push_back(target);
+        if (std::find(_admins.begin(), _admins.end(), target) != _admins.end())
+            _admins.erase(std::remove(_admins.begin(), _admins.end(), target), _admins.end());
+        if (std::find(_invited.begin(), _invited.end(), target) != _invited.end())
+            _invited.erase(std::remove(_invited.begin(), _invited.end(), target), _invited.end());
     }
+    m_args.erase(m_args.begin());
+}
+
+std::string    Channel::GetModes() {
+    std::string modes = "";
+    if (this->_invite_only)
+        modes += "i";
+    if (this->_protectedTopic)
+        modes += "t";
+    if (this->_limit != -1)
+        modes += "l";
+    if (this->_key != "")
+        modes += "k";
+    return modes;
 }

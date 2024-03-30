@@ -1,6 +1,8 @@
 #include "Database.hpp"
 #include <cstddef>
 #include <iostream>
+#include <string>
+#include <vector>
 
 Database* Database::DB = undefine;
 
@@ -599,6 +601,10 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 	std::cout << "N_topic : " << N_topic << std::endl;
 
 	// condition 0 : "TOPIC" --> need more params
+	if (channel_N.empty()) {
+		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
+		return ;
+	}
 	channel_N = ExtractChannelName(channel_N);
 
 	if (channel_N.empty()) {
@@ -667,107 +673,61 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 		}
 	}
 }
-	//     N_topic = ExtractTopic(topic, &two_dots);
-	//     if (N_topic.empty() && !two_dots) {
-	//         std::string error = ERR_NEEDMOREPARAMS(username, data);
-	//         std::cout << RED << std::endl;
-	//         send(UserSocket, error.c_str(), error.length(), 0);
-	//         std::cout << RESET << std::endl;
-	//         return ;
-	//     }
-	// }
-	// else {
-	//     two_dots = false;
-	//     N_topic = "";
-	// }
-	// std::cout << "channelName : [" << channel_N << "] N_topic : [" << N_topic << "]" << std::endl;
-	// std::map<std::string, Channel *>::iterator it = channels.find(channel_N);
-	// if (it != channels.end())
-	// {
-	//     std::cout << "GOT INTO TOPIC" << std::endl;
-	//     int v = it->second->DoesClientExist(username);
-	//     std::cout << "v = " << v << std::endl;
-	// 	if (v != 0 && !N_topic.empty() && it->second->isProtectedTopic()) {
-	//         std::cout << "[1]" << std::endl;
-	//         if (v == 1) {
-	//         std::cout << "[2]" << std::endl;
-	//             it->second->setTopic(N_topic);
-	//             std::string broadcast = RPL_TOPIC(username, channel_N, topic);
-	//             // send(UserSocket, broadcast.c_str(), broadcast.length(), 0);
-	//             it->second->BroadCastMessage(broadcast);
-	//         }
-	//         else if (v == 2 || v == 3) {
-	//             std::cout << "[3]" << std::endl;
-	//             std::string error = ERR_CHANOPRIVSNEEDED(username, channel_N);
-	//             std::cout << RED << std::endl;
-	//             send(UserSocket, error.c_str(), error.length(), 0);
-	//             std::cout << RESET << std::endl;
-	//         }
-	//     }
-	//     if (v != 0 && !N_topic.empty() && !it->second->isProtectedTopic()) {
-	//         std::cout << "[4]" << std::endl;
-	// 		it->second->setTopic(N_topic);
-	//         std::string broadcast = RPL_TOPIC(username, channel_N, topic);
-	//         // send(UserSocket, broadcast.c_str(), broadcast.length(), 0);
-	//         it->second->BroadCastMessage(broadcast);
-	// 	}
-	//     else if (v != 0 && N_topic.empty() && !two_dots)
-	//     {
-	//         std::cout << "[5]" << std::endl;
-	//         if (it->second->getTopic().empty())
-	//         {
-	//             std::string error = RPL_NOTOPIC(username, channel_N);
-	//             send(UserSocket, error.c_str(), error.length(), 0);
-	//         }
-	//         else {
-	//             std::string N_topic = RPL_TOPIC(username, channel_N, it->second->getTopic());
-	//             send(UserSocket, N_topic.c_str(), N_topic.length(), 0);
-	//         }
-	//     }
-	//     else if (v != 0 && N_topic.empty() && two_dots)
-	//     {
-	//         it->second->setTopic("");
-	//         std::string broadcast = RPL_TOPIC(username, channel_N, "");
-	//         it->second->BroadCastMessage(broadcast);
-	//     }
-	//     else if (v == 0)
-	//     {
-	//         std::string error = ERR_NOTONCHANNEL(username, channel_N);
-	//         send(UserSocket, error.c_str(), error.length(), 0);
-	//     }
-	// }
-	// else
-	// {
-	//     std::cout << "[6]" << std::endl;
-	//     std::string error = ERR_NOSUCHCHANNEL(username, channel_N);
-	// 	send(UserSocket, error.c_str(), error.length(), 0);
-	// }
 
 void    Database::HandleMode(std::string data, int UserSocket)
 {
 	bool addMode = true;
 	std::stringstream ss(data);
 
-	std::cout << "currently in MODE" << std::endl;
 	std::string UserName = GetUserBySocket(UserSocket);
-	std::string channelName = ss.str().substr(5, ss.str().find(' ', 5) - 5);
-	std::string channel_N = ExtractChannelName(channelName);
-	if (channel_N.empty()) {
-		std::string error = "(403) [" + UserName + "] " "[" + channelName + "] :No such channel\n";
-		send(UserSocket, error.c_str(), error.length(), 0);
+	std::string	command, channelName, modes, remain;
+
+	ss >> command >> channelName >> modes;
+
+	std::cout << "command : " << command << std::endl;
+	std::cout << "channelName : " << channelName << std::endl;
+	std::cout << "modes : " << modes << std::endl;
+
+	std::vector<std::string> m_args;
+
+	while (ss >> remain)
+		m_args.push_back(remain);
+
+	if (channelName.empty()) {
+		ERR_461_NEEDMOREPARAMS(UserName, command, UserSocket);
 		return ;
 	}
-	std::string mode = ss.str().substr(ss.str().find_first_not_of(' ', 5), ss.str().find(' ') - 5);
-	std::cout << "UserName : [" << UserName <<  "] channelName : [" << channelName << "] mode : [" << mode << "]" << std::endl;
+	channelName = ExtractChannelName(channelName);
+	if (channelName.empty()) {
+		ERR_403_NOSUCHCHANNEL(UserName, channelName, UserSocket);
+		return ;
+	}
+
+	int state = channels[channelName]->DoesClientExist(UserName);
+
+	if (state == 0) {
+		ERR_442_NOTONCHANNEL(UserName, channelName, UserSocket);
+		return ;
+	}
+	else if (state == 2 || state == 3) {
+		ERR_482_CHANOPRIVSNEEDED(UserName, channelName, UserSocket);
+		return ;
+	}
+
+	if (modes.empty()) {
+		RPL_324_CHANNELMODEIS(UserName, channelName,  UserSocket);
+		return ;
+	}
+
 	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
 	
-	for (size_t i = 0; i < mode.size(); i++) {
-		char c = mode[i];
+	for (size_t i = 0; i < modes.size(); i++) {
+		char c = modes[i];
 		if (c == '+' || c == '-') {
 			addMode = (c == '+');
 		}
 		else {
-			applyModeChange(c, addMode, it->second, UserName);
+			applyModeChange(c, addMode, it->second, UserName, m_args);
 		}
 	}
 }
@@ -803,8 +763,10 @@ std::string Database::ExtractTopic(std::string input, bool *two_dots) {
 	*two_dots = true;
 	return input.substr(pos);
 }
-void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::string UserName)
+
+void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::string UserName, std::vector<std::string> &m_args)
 {
+	int UserSocket = GetUserSocket(UserName);
 	std::cout << "applyModeChange : --> " << mode << std::endl;
 	switch (mode) {
 		case 'i':
@@ -814,15 +776,16 @@ void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::s
 			channel->setProtectedTopic(addMode);
 			break;
 		case 'l':
-			channel->setUserLimit(10);
+			channel->setUserLimit(m_args, UserName, addMode);
 			break;
 		case 'k':
-			channel->setKey("test");
+			channel->setKey(m_args, addMode, UserName);
 			break;
 		case 'o':
-			channel->SetOperator(UserName, addMode);
+			channel->SetOperator(UserName, addMode, m_args);
 			break;
 		default:
+			ERR_472_UNKNOWNMODE(UserName, mode, UserSocket);
 			break;
 	}
 }
@@ -884,7 +847,24 @@ void    Database::RPL_TOPIC_332(std::string username, std::string channelName, s
 	send(UserSocket, error.c_str(), error.length(), 0);
 }
 
+void	Database::RPL_324_CHANNELMODEIS(std::string username, std::string channelName, int UserSocket)
+{
+	std::string modes = channels[channelName]->GetModes();
+	std::string error = RPL_CHANNELMODEIS(username, channelName, modes);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
 
+void	Database::ERR_472_UNKNOWNMODE(std::string username, char mode, int UserSocket)
+{
+	std::string error = ERR_UNKNOWNMODE(username, mode);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::ERR_401_NOSUCHNICK(std::string username, std::string target, int UserSocket)
+{
+	std::string error = ERR_NOSUCHNICK(username, target);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
 
 // -----------------------------------------------------------
 

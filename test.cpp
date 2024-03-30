@@ -25,27 +25,49 @@ void parseInput(const std::string& input, std::string& channel, std::string& top
     }
 }
 
+void processModeArguments(std::vector<std::string>& arguments) {
+    if (!arguments.empty()) {
+        std::cout << "Processing mode argument: " << arguments.front() << std::endl;
+        // Remove the processed argument from the vector
+        arguments.erase(arguments.begin());
+    } else {
+        std::cout << "No more mode arguments to process." << std::endl;
+    }
+}
+
 int main() {
-    std::string input = "TOPIC                #Channel           :     new topic";
+    std::string input = "TOPIC                #Channel           55     aa ff gg tt";
 //    std::string channel, topic;
-    Database* db = Database::GetInstance();
-    bool two_dots = TRUE;
 //    parseInput(input, channel, topic);
 
 //    std::cout << "Channel: " << channel << std::endl;
 //    std::cout << "Topic: " << topic << std::endl;
 
 	std::stringstream ss(input);
-    std::string command;
-    std::string channel;
-    std::string topic;
+    std::string command, channel;
     ss >> command >> channel;
-    std::getline(ss, topic);
 
-    topic = db->ExtractTopic(input, &two_dots);
+    std::vector<std::string> args;
+
+    for (std::string arg; ss >> arg;) {
+        args.push_back(arg);
+    }
+
     std::cout << "Command: " << command << std::endl;
     std::cout << "Channel: " << channel << std::endl;
-    std::cout << "Topic: " << topic << std::endl;
+    
+    for (const auto& arg : args) {
+        std::cout << arg << std::endl;
+    }
+
+    processModeArguments(args);
+
+    std::cout << "********************************" << std::endl;
+
+    for (const auto& arg : args) {
+        std::cout << arg << std::endl;
+    }
+
 
     return 0;
 }

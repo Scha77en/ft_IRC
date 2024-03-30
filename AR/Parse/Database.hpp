@@ -18,24 +18,30 @@
 
 // ------------------ TOPIC RPL AND ERR MESSAGES ------------------
 
-#define RPL_TOPIC(client, channel, topic) "332 " + client + " " + channel + " :" + topic + "\n"
-#define RPL_NOTOPIC(client, channel) "331 " + client + " " + channel + " :No topic is set\n"
-#define ERR_NEEDMOREPARAMS(client, command) "461 " + client + " " + command + " :Not enough parameters\n"
-#define ERR_NOSUCHCHANNEL(client, channel) "403 " + client + " " + channel + " :No such channel\n"
-#define ERR_NOTONCHANNEL(client, channel) "442 " + client + " " + channel + " :You're not on that channel\n"
-#define ERR_CHANOPRIVSNEEDED(client, channel) "482 " + client + " " + channel + " :You're not channel operator\n"
+#define RPL_TOPIC(client, channel, topic) "irc.1337.ma 332 " + client + " #" + channel + " :" + topic + "\n"
+#define RPL_NOTOPIC(client, channel) "irc.1337.ma 331 " + client + " #" + channel + " :No topic is set\n"
+#define ERR_NEEDMOREPARAMS(client, command) "irc.1337.ma 461 " + client + " " + command + " :Not enough parameters\n"
+#define ERR_NOSUCHCHANNEL(client, channel) "irc.1337.ma 403 " + client + " #" + channel + " :No such channel\n"
+#define ERR_NOTONCHANNEL(client, channel) "irc.1337.ma 442 " + client + " #" + channel + " :You're not on that channel\n"
+#define ERR_CHANOPRIVSNEEDED(client, channel) "irc.1337.ma 482 " + client + " #" + channel + " :You're not channel operator\n"
 
 // ------------------ MODE RPL AND ERR MESSAGES ------------------
 
-#define ERR_CHANNELISFULL(client, channel) "471 " + client + " " + channel + " :Cannot join channel (+l)\n"
-#define ERR_INVITEONLYCHAN(client, channel) "473 " + client + " " + channel + " :Cannot join channel (+i)\n"
-#define ERR_BADCHANNELKEY(client, channel) "475 " + client + " " + channel + " :Cannot join channel (+k)\n"
-#define ERR_CHANOPRIVSNEEDED(client, channel) "482 " + client + " " + channel + " :You're not channel operator\n"
+#define ERR_CHANNELISFULL(client, channel) "irc.1337.ma 471 " + client + " #" + channel + " :Cannot join channel (+l)\n"
+#define ERR_INVITEONLYCHAN(client, channel) "irc.1337.ma 473 " + client + " #" + channel + " :Cannot join channel (+i)\n"
+#define ERR_BADCHANNELKEY(client, channel) "irc.1337.ma 475 " + client + " #" + channel + " :Cannot join channel (+k)\n"
+#define ERR_CHANOPRIVSNEEDED(client, channel) "irc.1337.ma 482 " + client + " #" + channel + " :You're not channel operator\n"
+#define RPL_CHANNELMODEIS(client, channel, mode) "irc.1337.ma 324 " + client + " #" + channel + " " + mode + "\n"
+#define ERR_UNKNOWNMODE(client, mode) "irc.1337.ma 472 " + client + " " + mode + " :is unknown mode char to me\n"
+#define ERR_INVALIDMODEPARAM_O(client, channel, mode) "irc.1337.ma 696 " + client + " #" + channel + " " + mode + " :You must specify a target for the operator mode (+/-)o <target>.\n"
+#define ERR_INVALIDMODEPARAM_K(client, channel, mode) "irc.1337.ma 696 " + client + " #" + channel + " " + mode + " :You must specify a key for the key mode (+/-)k <key>.\n"
+#define ERR_INVALIDMODEPARAM_L(client, channel, mode) "irc.1337.ma 696 " + client + " #" + channel + " " + mode + " :You must specify a limit for the limit mode (+/-)l <limit>.\n"
+#define ERR_NOSUCHNICK(client, target) "irc.1337.ma 401 " + client + " " + target + " :No such nick/channel\n"
 
 // ------------------ INVITE RPL AND ERR MESSAGES ------------------
 
-#define RPL_INVITING(client, user, channel) "341 " + client + " " + user + " " + channel + "\n"
-#define ERR_USERONCHANNEL(client, user, channel) "443 " + client + " " + user + " " + channel + " :is already on channel\n"
+#define RPL_INVITING(client, user, channel) "irc.1337.ma 341 " + client + " " + user + " " + channel + "\n"
+#define ERR_USERONCHANNEL(client, user, channel) "irc.1337.ma 443 " + client + " " + user + " " + channel + " :is already on channel\n"
 
 #define TRUE 1
 #define FALSE 0
@@ -109,7 +115,7 @@ class Database
 		std::string ExtractChannelName(std::string data);
 		std::string ExtractTopic(std::string data, bool *two_dots);
 
-		void applyModeChange(char mode, bool addMode, Channel *channel, std::string UserName);
+		void applyModeChange(char mode, bool addMode, Channel *channel, std::string UserName, std::vector<std::string> &m_args);
 		bool DoesChannelExist(std::string channelName);
 		bool IsUserInChannel(std::string channelName, std::string UserName);
 
@@ -121,7 +127,10 @@ class Database
 		void	ERR_482_CHANOPRIVSNEEDED(std::string username, std::string channelName, int UserSocket);
 		void	RPL_NOTOPIC_331(std::string username, std::string channelName, int UserSocket);
 		void	RPL_TOPIC_332(std::string username, std::string channelName, std::string topic, int UserSocket);
-		
+		void	RPL_324_CHANNELMODEIS(std::string username, std::string channelName, int UserSocket);
+		void	ERR_472_UNKNOWNMODE(std::string username, char mode, int UserSocket);
+		void	ERR_401_NOSUCHNICK(std::string username, std::string target, int UserSocket);
+
 };
 
 #endif
