@@ -44,6 +44,7 @@ class Client
         bool ChannelList(string name);
         bool LogoutFromAllChannels();
         bool LimitedChannels(void);
+        bool DeleteChannel(string name);
 
         string GetClientIP(void);
         string GetUsername(void);

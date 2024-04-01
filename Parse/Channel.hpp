@@ -12,7 +12,6 @@
 #include <algorithm>
 #include <sys/socket.h>
 #include <utility> 
-#include "Database.hpp"
 
 #define BLACK "\033[1;30m"
 #define RED "\033[1;31m"
@@ -25,9 +24,6 @@
 #define RESET "\033[0m"
 
 typedef std::vector<std::string> Container;
-
-class Client;
-class Database;
 
 class Channel 
 {
@@ -45,7 +41,7 @@ class Channel
 		int _limit;
 
 		bool _invite_only;
-		bool _protectedTopic;
+		//bool _protectedTopic;
 
 	public:
 
@@ -56,6 +52,7 @@ class Channel
 		int CountMembers(void);
 		int CountInvited(void);
 		int CountAdmins(void);
+		int UserCategory(std::string username);
 
 		bool isInviteOnly();
 		bool FirstCreation(void);
@@ -64,6 +61,7 @@ class Channel
 		std::string GetSecretKey();
 		std::string ChannelName(void);
 		std::string GetSymbol(void);
+		std::string UserPrivillage(std::string username);
 
 		void BanMember(std::string username);
 		void SetLimit(int limited_to);
@@ -73,43 +71,8 @@ class Channel
 		void MembertoAdmin(std::string member);
 		void UsersInChannel(int Sokect, std::string username, std::string IP);
 		void setInviteOnly(bool invite_only);
+		void PartFromChannels(std::string member);
 
-		std::string getTopic();
-		void setTopic(std::string topic);
-
-		bool setUserLimit(std::vector<std::string> &m_args, std::string UserName, bool addMode);
-		int getUserLimit(void);
-
-		bool setKey(std::vector<std::string> &m_args, bool addMode, std::string UserName);
-		std::string getKey(void);
-
-		void setProtectedTopic(bool protectedTopic);
-		bool isProtectedTopic();
-
-		int DoesClientExist(const std::string name);
-		void    BroadCastMessage(std::string broadcast);
-
-		bool	SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args);
-
-		std::string GetModes(void);
-        /*
-		void parce_user_data(char buffer[1024]);
-		void handleTopic(char buffer[1024]);
-		// void	handleJoin(char buffer[1024]);
-
-		std::string getTopic();
-		void setTopic(std::string topic);
-		std::string getName();
-		void setName(std::string name);
-
-		void setUserLimit(int limit);
-		int getUserLimit(void);
-		// void	setUserMode(std::string mode);
-		void setKey(std::string key);
-		std::string getKey(void);
-		void setProtectedTopic(bool protectedTopic);
-		bool isProtectedTopic();
-        */
 };
 
 #endif

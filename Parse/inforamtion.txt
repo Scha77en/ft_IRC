@@ -1,3 +1,39 @@
+=> SO_REUSEADDR is an option that allows you to reuse local addresses.
+
+=> The poll function in C/C++ is used for monitoring multiple file descriptors 
+to see if any of them become ready for I/O operations. 
+
+=> struct pollfd objects, where each object represents a file descriptor you want to monitor. 
+Each struct pollfd contains the file descriptor (fd) and events to monitor (events).
+
+=> events field to specify the events you're interested in , POLLIN for data to read .
+
+=> revents field to check for specific events , POLLIN for data to read .
+
+=> int poll(struct pollfd *fds, nfds_t nfds, int timeout);
+
+struct pollfd {
+    int fd;         // file descriptor to be monitored
+    short events;   // events to monitor (input and output events)
+    short revents;  // returned events (output only)
+};
+
+returns the number of file descriptors that have events , errors returns -1
+
+=> fcntl: used for file control.
+
+int fcntl(int fd, int cmd, ... /* arg */);
+
+in network programming, "blocking" refers to a situation where a program halts its execution until a particular operation completes .
+when you try to read data from a socket in blocking mode and there's no data available, the program will wait until data arrives before proceeding.
+
+_SETFL: a flag used to indicate that you want to set the file status flags of the specified file descriptor. 
+
+O_NONBLOCK: This is a flag that indicates non-blocking mode. 
+When set on a socket, it means that I/O operations on that socket won't block 
+the calling process even if there is no data available.
+
+
 int socket(int domain, int type, int protocol);
 
 Specifies the communication domain in which the socket should be created.
