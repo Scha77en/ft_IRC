@@ -226,7 +226,7 @@ bool Server::ServerCreate()
         return EXIT_FAILURE;
     }
     addrlen = sizeof(server_addr);
-    //fcntl(server_socket, F_SETFL, O_NONBLOCK);
+    // fcntl(server_socket, F_SETFL, O_NONBLOCK);
     std::cout << BLUE << "Server listening on port " << PORT << "...\n";
     fds[0].fd = server_socket;
     fds[0].events = POLLIN;

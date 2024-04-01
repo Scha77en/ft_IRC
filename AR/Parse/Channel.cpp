@@ -134,24 +134,25 @@ void Channel::setTopic(std::string topic)
     this->_topic = topic;
 }
 
-void Channel::setUserLimit(std::vector<std::string> &m_args, std::string UserName, bool addMode)
+bool Channel::setUserLimit(std::vector<std::string> &m_args, std::string UserName, bool addMode)
 {
     if (!addMode) {
         this->_limit = -1;
-        return ;
+        return true;
     }
     int UserSocket = Database::GetInstance()->GetUserSocket(UserName);
     if (m_args.size() == 0)
     {
         std::string error = ERR_INVALIDMODEPARAM_L(UserName, ChannelName(), 'l');
         send(UserSocket, error.c_str(), error.length(), 0);
-        return ;
+        return false;
     }
     int limit = std::stoi(m_args[0]);
     if (limit < 0)
         limit = -1;
     this->_limit = limit;
-     m_args.erase(m_args.begin());
+    m_args.erase(m_args.begin());
+    return true;
 }
 
 int Channel::getUserLimit(void)
@@ -159,22 +160,23 @@ int Channel::getUserLimit(void)
     return this->_limit;
 }
 
-void Channel::setKey(std::vector<std::string> &m_args, bool addMode, std::string UserName)
+bool Channel::setKey(std::vector<std::string> &m_args, bool addMode, std::string UserName)
 {
     if (!addMode) {
         this->_key = "";
-        return ;
+        return true;
     }
     int UserSocket = Database::GetInstance()->GetUserSocket(UserName);
     if (m_args.size() == 0)
     {
         std::string error = ERR_INVALIDMODEPARAM_K(UserName, ChannelName(), 'k');
         send(UserSocket, error.c_str(), error.length(), 0);
-        return ;
+        return false;
     }
     std::string key = m_args[0];
     this->_key = key;
     m_args.erase(m_args.begin());
+    return true;
 }
 
 std::string Channel::getKey(void)
@@ -250,7 +252,7 @@ void Channel::BroadCastMessage(std::string broadcast) {
     }
 }
 
-void Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args)
+bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args)
 {
     Database *db = Database::GetInstance();
     Client *client = Database::GetInstance()->GetClient(name);
@@ -259,13 +261,13 @@ void Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
     {
         std::string error = ERR_INVALIDMODEPARAM_O(name, ChannelName(), 'o');
         send(UserSocket, error.c_str(), error.length(), 0);
-        return ;
+        return false;
     }
     std::string target = m_args[0];
     int t_state = DoesClientExist(target);
     if (t_state == 0) {
-        db->ERR_442_NOTONCHANNEL(target, ChannelName(), UserSocket);
-        return;
+        db->ERR_441_USERNOTINCHANNEL(name, target, ChannelName(), UserSocket);
+        return false;
     }
     if (Mode == 1) {
         if (std::find(_admins.begin(), _admins.end(), target) == _admins.end())
@@ -285,6 +287,7 @@ void Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
             _invited.erase(std::remove(_invited.begin(), _invited.end(), target), _invited.end());
     }
     m_args.erase(m_args.begin());
+    return true;
 }
 
 std::string    Channel::GetModes() {

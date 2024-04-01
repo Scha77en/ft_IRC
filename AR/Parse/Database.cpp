@@ -53,6 +53,7 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 	string output;
 	std::stringstream Respond;
 
+
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		if (it->second->ChannelList(name))
@@ -67,6 +68,13 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 			}
 		}
 	}
+	Channel *channel = GetChannel(name);
+	if (channel == undefine)
+		return ;
+	if (channel->getTopic().empty())
+		RPL_NOTOPIC_331(username, name, UserSocket);
+	else
+		RPL_TOPIC_332(username, name, channel->getTopic(), UserSocket);
 	SYSTEM_CHANNEL::iterator it;
 	for (it = channels.begin(); it != channels.end(); ++it)
 	{
@@ -321,6 +329,8 @@ void Database::HandelMultiChannel(string data, int UserSocket)
 			}
 			if (channel->isInviteOnly())
 			{
+				int state = channel->DoesClientExist(username);
+				
 				Protection473(it->first, UserSocket, username, IP);
 				continue;
 			}
@@ -380,6 +390,8 @@ void Database::ParseUserInput(string data, int UserSocket)
 		service->StartCommunication(UserSocket, data.substr(8));
 	else if (command == "TOPIC" || command == "topic")
 		service->HandleTopic(data, UserSocket);
+	else if (command == "INVITE" || command == "invite")
+		HandleInvite(data, UserSocket);
 	else if (command == "MODE" || command == "mode") 
 		service->HandleMode(data, UserSocket);
 	else if (command == "PONG" || command == "pong")
@@ -614,11 +626,12 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 	std::map<std::string, Channel *>::iterator it = channels.find(channel_N);
 
 	N_topic = ExtractTopic(N_topic, &two_dots);
+	std::cout << "N_topic extracted : [" << N_topic << "]" << std::endl;
 	// condition 1 : "TOPIC #channel" -> get the topic
 	if (N_topic.empty() && !two_dots) {
 		// --- if topic is empty then the client is asking for the topic ---
 		int state = it->second->DoesClientExist(username);
-		if (state == 0) {
+		if (state == 0 || state == 3) {
 			ERR_442_NOTONCHANNEL(username, channel_N, UserSocket);
 			return ;
 		}
@@ -631,7 +644,7 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 	}
 	else if (N_topic.empty() && two_dots) {
 		int state = it->second->DoesClientExist(username);
-		if (state == 0) {
+		if (state == 0 || state == 3) {
 			ERR_442_NOTONCHANNEL(username, channel_N, UserSocket);
 			return ;
 		}
@@ -653,7 +666,7 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 	// condition 2 : "TOPIC #channel :" -> set the topic to empty
 	else if (!N_topic.empty()) {
 		int state = it->second->DoesClientExist(username);
-		if (state == 0) {
+		if (state == 0 || state == 3) {
 			ERR_442_NOTONCHANNEL(username, channel_N, UserSocket);
 			return ;
 		}
@@ -705,11 +718,11 @@ void    Database::HandleMode(std::string data, int UserSocket)
 
 	int state = channels[channelName]->DoesClientExist(UserName);
 
-	if (state == 0) {
+	if (state == 0 || state == 3) {
 		ERR_442_NOTONCHANNEL(UserName, channelName, UserSocket);
 		return ;
 	}
-	else if (state == 2 || state == 3) {
+	else if (state == 2) {
 		ERR_482_CHANOPRIVSNEEDED(UserName, channelName, UserSocket);
 		return ;
 	}
@@ -728,6 +741,49 @@ void    Database::HandleMode(std::string data, int UserSocket)
 		}
 		else {
 			applyModeChange(c, addMode, it->second, UserName, m_args);
+		}
+	}
+}
+
+void	Database::HandleInvite(std::string data, int UserSocket)
+{
+	int state;
+	std::string command, username, channelName, target;
+
+	std::stringstream ss(data);
+	ss >> command >> target >> channelName;
+	username = GetUserBySocket(UserSocket);
+
+	if (channelName.empty()) {
+		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
+		return ;
+	}
+	channelName = ExtractChannelName(channelName);
+	if (channelName.empty()) {
+		ERR_403_NOSUCHCHANNEL(username, channelName, UserSocket);
+		return ;
+	}
+
+	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
+	std::map<std::string, Channel *>::iterator iter = channels.find(channelName);
+	state = iter->second->DoesClientExist(username);
+	if (state == 0 || state == 3) {
+		ERR_442_NOTONCHANNEL(username, channelName, UserSocket);
+		return ;
+	}
+	else if ((state == 2) && iter->second->isInviteOnly()) {
+		ERR_482_CHANOPRIVSNEEDED(username, channelName, UserSocket);
+		return ;
+	}
+	else {
+		state = it->second->DoesClientExist(target);
+		if (state == 0 || state == 3) {
+			RPL_341_INVITING(username, target, channelName, UserSocket);
+			return ;
+		}
+		else {
+			ERR_443_USERONCHANNEL(username, target, channelName, UserSocket);
+			return ;
 		}
 	}
 }
@@ -752,7 +808,19 @@ std::string Database::ExtractChannelName(std::string input) {
 
 std::string Database::ExtractTopic(std::string input, bool *two_dots) {
 	size_t pos;
+	size_t x = 0;
 
+	if (!input.empty()) {
+		x = input.find(13);
+		std::cout << "x : " << x << std::endl;
+		if (x != std::string::npos)
+			input[x] = '\0';
+	}
+	if (input[0] == '\0') {
+		std::cout << "empty input" << std::endl;
+		*two_dots = false;
+		return "";
+	}
 	pos = input.find_first_not_of(' ');
 	if (pos == std::string::npos) {
 		*two_dots = false;
@@ -761,28 +829,63 @@ std::string Database::ExtractTopic(std::string input, bool *two_dots) {
 	else if (input[pos] == ':')
 		pos++;
 	*two_dots = true;
-	return input.substr(pos);
+	return input.substr(pos, input.length() - pos);
 }
 
 void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::string UserName, std::vector<std::string> &m_args)
 {
+	std::string broadcast;
+	int TargetSocket = 0;
 	int UserSocket = GetUserSocket(UserName);
 	std::cout << "applyModeChange : --> " << mode << std::endl;
 	switch (mode) {
 		case 'i':
 			channel->setInviteOnly(addMode);
+			if (addMode)
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +i\n";
+			else
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -i\n";
+			channel->BroadCastMessage(broadcast);
 			break;
 		case 't':
 			channel->setProtectedTopic(addMode);
+			if (addMode)
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +t\n";
+			else
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -t\n";
+			channel->BroadCastMessage(broadcast);
 			break;
 		case 'l':
-			channel->setUserLimit(m_args, UserName, addMode);
+			if (channel->setUserLimit(m_args, UserName, addMode)) {
+				if (addMode)
+					broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +l\n";
+				else
+					broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -l\n";
+				channel->BroadCastMessage(broadcast);
+			}
 			break;
 		case 'k':
-			channel->setKey(m_args, addMode, UserName);
+			if (channel->setKey(m_args, addMode, UserName)) {
+			if (addMode)
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +k\n";
+			else
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -k\n";
+			channel->BroadCastMessage(broadcast);
+			}
 			break;
 		case 'o':
-			channel->SetOperator(UserName, addMode, m_args);
+			TargetSocket = GetUserSocket(m_args[0]);
+			if (channel->SetOperator(UserName, addMode, m_args)) {
+			if (addMode)
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +o\n";
+			else
+				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -o\n";
+			send(TargetSocket, broadcast.c_str(), broadcast.length(), 0);
+			}
+			break;
+		case 's':
+			break;
+		case 'n':
 			break;
 		default:
 			ERR_472_UNKNOWNMODE(UserName, mode, UserSocket);
@@ -862,7 +965,26 @@ void	Database::ERR_472_UNKNOWNMODE(std::string username, char mode, int UserSock
 
 void	Database::ERR_401_NOSUCHNICK(std::string username, std::string target, int UserSocket)
 {
-	std::string error = ERR_NOSUCHNICK(username, target);
+	std::string error = ERR_NOSUCHNICK_(username, target);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+
+void	Database::ERR_441_USERNOTINCHANNEL(std::string UserName, std::string target, std::string channelName, int UserSocket)
+{
+	std::string error = ERR_USERNOTINCHANNEL(UserName, target, channelName);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::RPL_341_INVITING(std::string UserName, std::string target, std::string channel, int UserSocket)
+{
+	std::string error = RPL_INVITING(UserName, target, channel);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::ERR_443_USERONCHANNEL(std::string UserName, std::string target, std::string channel, int UserSocket)
+{
+	std::string error = ERR_USERONCHANNEL(UserName, target, channel);
 	send(UserSocket, error.c_str(), error.length(), 0);
 }
 
