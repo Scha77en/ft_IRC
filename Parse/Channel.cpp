@@ -1,4 +1,5 @@
 #include "Channel.hpp"
+#include "Database.hpp"
 
 Channel::~Channel() {}
 
@@ -6,8 +7,8 @@ Channel::Channel(std::string name, std::string key)
 {
 	this->_name = name;
     this->_key = key;
-    this->_limit = -1;
-    this->_invite_only = 0;
+    this->_limit = -1; // -1 => not set , 2 => Only for test
+    this->_invite_only = 0; // (true or false) 1 => For test only
 }
 
 bool Channel::isInviteOnly()
@@ -79,43 +80,6 @@ void Channel::MembertoAdmin(std::string member)
     }
 }
 
-void Channel::PartFromChannels(std::string member)
-{
-    Container::iterator it;
-    
-    it = std::find(_members.begin(), _members.end(), member);
-    if (it != _members.end())
-        _members.erase(it);
-    
-    it = std::find(_admins.begin(), _admins.end(), member);
-    if (it != _admins.end())
-        _admins.erase(it);
-    
-    it = std::find(_invited.begin(), _invited.end(), member);
-    if (it != _invited.end())
-        _invited.erase(it);
-
-}
-
-int Channel::UserCategory(std::string username)
-{
-    Container::iterator it;
-    
-    it = std::find(_members.begin(), _members.end(), username);
-    if (it != _members.end())
-       return 1;
-
-    it = std::find(_invited.begin(), _invited.end(), username);
-    if (it != _invited.end())
-        return 2;
-    
-    it = std::find(_admins.begin(), _admins.end(), username);
-    if (it != _admins.end())
-        return 3;
-    
-    return (0);
-}
-
 std::string Channel::GetSecretKey()
 {
     return this->_key;
@@ -148,7 +112,7 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     std::string output;
     std::stringstream Respond;
 
-    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << ChannelName() + " :";
+    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << "#" + ChannelName() + " :";
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)
@@ -156,4 +120,185 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     Respond << std::endl;
     output = Respond.str();
     send(Sokect, output.c_str(), output.length(), 0);
+}
+
+// ***************************************************************************
+
+std::string Channel::getTopic()
+{
+    return this->_topic;
+}
+
+void Channel::setTopic(std::string topic)
+{
+    this->_topic = topic;
+}
+
+bool Channel::setUserLimit(std::vector<std::string> &m_args, std::string UserName, bool addMode)
+{
+    if (!addMode) {
+        this->_limit = -1;
+        return true;
+    }
+    int UserSocket = Database::GetInstance()->GetUserSocket(UserName);
+    if (m_args.size() == 0)
+    {
+        std::string error = ERR_INVALIDMODEPARAM_L(UserName, ChannelName(), 'l');
+        send(UserSocket, error.c_str(), error.length(), 0);
+        return false;
+    }
+    int limit = std::stoi(m_args[0]);
+    if (limit < 0)
+        limit = -1;
+    this->_limit = limit;
+    m_args.erase(m_args.begin());
+    return true;
+}
+
+int Channel::getUserLimit(void)
+{
+    return this->_limit;
+}
+
+bool Channel::setKey(std::vector<std::string> &m_args, bool addMode, std::string UserName)
+{
+    if (!addMode) {
+        this->_key = "";
+        return true;
+    }
+    int UserSocket = Database::GetInstance()->GetUserSocket(UserName);
+    if (m_args.size() == 0)
+    {
+        std::string error = ERR_INVALIDMODEPARAM_K(UserName, ChannelName(), 'k');
+        send(UserSocket, error.c_str(), error.length(), 0);
+        return false;
+    }
+    std::string key = m_args[0];
+    this->_key = key;
+    m_args.erase(m_args.begin());
+    return true;
+}
+
+std::string Channel::getKey(void)
+{
+    return this->_key;
+}
+
+void Channel::setProtectedTopic(bool protectedTopic)
+{
+    this->_protectedTopic = protectedTopic;
+}
+
+bool Channel::isProtectedTopic()
+{
+    return this->_protectedTopic;
+}
+
+int Channel::DoesClientExist(const std::string name)
+{
+    if (std::find(_admins.begin(), _admins.end(), name) != _admins.end())
+        return (1);
+    else if (std::find(_members.begin(), _members.end(), name) != _members.end())
+        return (2);
+    else if (std::find(_invited.begin(), _invited.end(), name) != _invited.end())
+        return (3);
+    return (0);
+}
+
+void Channel::BroadCastMessage(std::string broadcast) {
+    // Iterate over members
+    for (Container::const_iterator it = _members.begin(); it != _members.end(); ++it) {
+        const std::string& member = *it;
+
+        // Get the client from the database
+        Client* client = Database::GetInstance()->GetClient(member);
+        if (client != NULL) {
+            // Get the client's socket
+            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+
+            // Send the message to the client
+            send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
+        }
+    }
+
+    // Iterate over admins
+    for (Container::const_iterator it = _admins.begin(); it != _admins.end(); ++it) {
+        const std::string& admin = *it;
+
+        // Get the client from the database
+        Client* client = Database::GetInstance()->GetClient(admin);
+        if (client != NULL) {
+            // Get the client's socket
+            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+
+            // Send the message to the client
+            send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
+        }
+    }
+
+    // Iterate over invited
+    for (Container::const_iterator it = _invited.begin(); it != _invited.end(); ++it) {
+        const std::string& invited = *it;
+
+        // Get the client from the database
+        Client* client = Database::GetInstance()->GetClient(invited);
+        if (client != NULL) {
+            // Get the client's socket
+            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+
+            // Send the message to the client
+            send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
+        }
+    }
+}
+
+bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args)
+{
+    Database *db = Database::GetInstance();
+    Client *client = Database::GetInstance()->GetClient(name);
+    int UserSocket = client->GetSocket();
+    if (m_args.size() == 0)
+    {
+        std::string error = ERR_INVALIDMODEPARAM_O(name, ChannelName(), 'o');
+        send(UserSocket, error.c_str(), error.length(), 0);
+        return false;
+    }
+    std::string target = m_args[0];
+    int t_state = DoesClientExist(target);
+    if (t_state == 0) {
+        db->ERR_441_USERNOTINCHANNEL(name, target, ChannelName(), UserSocket);
+        return false;
+    }
+    if (Mode == 1) {
+        if (std::find(_admins.begin(), _admins.end(), target) == _admins.end())
+            _admins.push_back(target);
+        if (std::find(_members.begin(), _members.end(), target) != _members.end())
+            _members.erase(std::remove(_members.begin(), _members.end(), target), _members.end());
+        if (std::find(_invited.begin(), _invited.end(), target) != _invited.end())
+            _invited.erase(std::remove(_invited.begin(), _invited.end(), target), _invited.end());
+    }
+    else
+    {
+        if (std::find(_members.begin(), _members.end(), target) == _members.end())
+            _members.push_back(target);
+        if (std::find(_admins.begin(), _admins.end(), target) != _admins.end())
+            _admins.erase(std::remove(_admins.begin(), _admins.end(), target), _admins.end());
+        if (std::find(_invited.begin(), _invited.end(), target) != _invited.end())
+            _invited.erase(std::remove(_invited.begin(), _invited.end(), target), _invited.end());
+    }
+    m_args.erase(m_args.begin());
+    return true;
+}
+
+std::string    Channel::GetModes() {
+    std::string modes = "";
+    if (this->_invite_only)
+        modes += "i";
+    if (this->_protectedTopic)
+        modes += "t";
+    if (this->_limit != -1)
+        modes += "l";
+    if (this->_key != "")
+        modes += "k";
+    return modes;
 }
