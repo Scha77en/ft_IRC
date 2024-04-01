@@ -52,6 +52,7 @@ class Channel
 		int CountMembers(void);
 		int CountInvited(void);
 		int CountAdmins(void);
+		int UserCategory(std::string username);
 
 		bool isInviteOnly();
 		bool FirstCreation(void);
@@ -60,6 +61,7 @@ class Channel
 		std::string GetSecretKey();
 		std::string ChannelName(void);
 		std::string GetSymbol(void);
+		std::string UserPrivillage(std::string username);
 
 		void BanMember(std::string username);
 		void SetLimit(int limited_to);

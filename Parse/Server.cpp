@@ -83,6 +83,10 @@ bool Server::ProccessUserData(int NewClientSocket, struct in_addr ClientIP)
         is_log = undefine;
     if (is_log == undefine)
         return (undefine);
+    
+    if (username.empty() || username.back() != '\0')
+            username.push_back('\0');
+
     info->AddClient(username);
     Client * NewClient = info->GetClient(username);
     NewClient->SetName(name);

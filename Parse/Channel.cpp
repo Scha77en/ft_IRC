@@ -6,8 +6,8 @@ Channel::Channel(std::string name, std::string key)
 {
 	this->_name = name;
     this->_key = key;
-    this->_limit = -1; // -1 => not set , 2 => Only for test
-    this->_invite_only = 0; // (true or false) 1 => For test only
+    this->_limit = -1;
+    this->_invite_only = 0;
 }
 
 bool Channel::isInviteOnly()
@@ -95,6 +95,25 @@ void Channel::PartFromChannels(std::string member)
     if (it != _invited.end())
         _invited.erase(it);
 
+}
+
+int Channel::UserCategory(std::string username)
+{
+    Container::iterator it;
+    
+    it = std::find(_members.begin(), _members.end(), username);
+    if (it != _members.end())
+       return 1;
+
+    it = std::find(_invited.begin(), _invited.end(), username);
+    if (it != _invited.end())
+        return 2;
+    
+    it = std::find(_admins.begin(), _admins.end(), username);
+    if (it != _admins.end())
+        return 3;
+    
+    return (0);
 }
 
 std::string Channel::GetSecretKey()
