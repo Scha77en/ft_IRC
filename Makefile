@@ -4,10 +4,10 @@ CPP = c++
 
 CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
-HEADER_P = Parse/Server.hpp Parse/Channel.hpp Parse/Database.hpp Parse/Client.hpp
+HEADER_P = IRC/Server.hpp IRC/Channel.hpp IRC/Database.hpp IRC/Client.hpp
 
 # Directories
-SRCDIR = Parse
+SRCDIR = IRC
 BINDIR = bin
 
 # Source files

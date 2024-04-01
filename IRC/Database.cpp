@@ -328,9 +328,7 @@ void Database::HandelMultiChannel(string data, int UserSocket)
 				continue;
 			}
 			if (channel->isInviteOnly())
-			{
-				int state = channel->DoesClientExist(username);
-				
+			{	
 				Protection473(it->first, UserSocket, username, IP);
 				continue;
 			}
