@@ -95,10 +95,19 @@ class Database
         void    DisplayMessages(int UserSocket, string data);
         void    ListUsersChannels(string data, int UserSocket);
         void    StartCommunication(int UserSocket, string data);
+
+
         void    HandelMultiChannel(string data, int UserSocket);
+		void 	HandelMultiPART(string data, int UserSocket);
+		void 	HandelKick(string data, int UserSocket);
+
+
+        void 	NoticeUserHasJoined(string name, string username, int UserSocket, string IP);
+		void 	NoticeUserPART(string ChannelName, string username, int UserSocket, string IP, string msg);
+		void 	NoticeUserKICK(string ChannelName, string username, string IP, string target, string msg);
+
 		void    AddChannel(const std::string& name, Channel* channel);
         void    DisplayMessages(string data, string name, string username, int UserSocket);
-        void 	NoticeUserHasJoined(string name, string username, int UserSocket, string IP);
         void    NoticeUserLogout(string name, string username);
 		void 	PRIVMessages(string data, string name, string username);
 
