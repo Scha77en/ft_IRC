@@ -610,6 +610,8 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 	std::cout << "channel_N : " << channel_N << std::endl;
 	std::cout << "N_topic : " << N_topic << std::endl;
 
+	PrintChannels();
+
 	// condition 0 : "TOPIC" --> need more params
 	if (channel_N.empty()) {
 		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
