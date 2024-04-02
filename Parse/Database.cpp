@@ -475,10 +475,15 @@ void Database::ParseUserInput(string data, int UserSocket)
 	string username = service->GetUserBySocket(UserSocket);
 	//Client *user = service->GetClient(username);
 
+	CleanInput(data, ' ');
+    std::stringstream cmd(data);
+    cmd >> command;
+    std::getline(cmd, args);
+
 	if (command == "JOIN" || command == "join")
-		HandelMultiChannel(data, UserSocket);
+		HandelMultiChannel(args, UserSocket);
 	else if (command == "PRIVMSG" || command == "privmsg")
-		service->StartCommunication(UserSocket, data.substr(8));
+		service->StartCommunication(UserSocket, args);
 	else if (command == "TOPIC" || command == "topic")
 		service->HandleTopic(data, UserSocket);
 	else if (command == "INVITE" || command == "invite")
