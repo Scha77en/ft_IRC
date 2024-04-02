@@ -235,21 +235,6 @@ void Channel::BroadCastMessage(std::string broadcast) {
             send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
         }
     }
-
-    // Iterate over invited
-    for (Container::const_iterator it = _invited.begin(); it != _invited.end(); ++it) {
-        const std::string& invited = *it;
-
-        // Get the client from the database
-        Client* client = Database::GetInstance()->GetClient(invited);
-        if (client != NULL) {
-            // Get the client's socket
-            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
-
-            // Send the message to the client
-            send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
-        }
-    }
 }
 
 bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args)
@@ -265,7 +250,7 @@ bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
     }
     std::string target = m_args[0];
     int t_state = DoesClientExist(target);
-    if (t_state == 0) {
+    if (t_state == 0 || t_state == 3) {
         db->ERR_441_USERNOTINCHANNEL(name, target, ChannelName(), UserSocket);
         return false;
     }
@@ -274,8 +259,6 @@ bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
             _admins.push_back(target);
         if (std::find(_members.begin(), _members.end(), target) != _members.end())
             _members.erase(std::remove(_members.begin(), _members.end(), target), _members.end());
-        if (std::find(_invited.begin(), _invited.end(), target) != _invited.end())
-            _invited.erase(std::remove(_invited.begin(), _invited.end(), target), _invited.end());
     }
     else
     {
@@ -283,8 +266,6 @@ bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
             _members.push_back(target);
         if (std::find(_admins.begin(), _admins.end(), target) != _admins.end())
             _admins.erase(std::remove(_admins.begin(), _admins.end(), target), _admins.end());
-        if (std::find(_invited.begin(), _invited.end(), target) != _invited.end())
-            _invited.erase(std::remove(_invited.begin(), _invited.end(), target), _invited.end());
     }
     m_args.erase(m_args.begin());
     return true;

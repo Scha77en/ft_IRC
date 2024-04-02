@@ -136,8 +136,38 @@ class Database
 		void	ERR_441_USERNOTINCHANNEL(std::string UserName, std::string target, std::string channelName, int UserSocket);
 		void	RPL_341_INVITING(std::string UserName, std::string target, std::string channel, int UserSocket);
 		void	ERR_443_USERONCHANNEL(std::string UserName, std::string target, std::string channel, int UserSocket);
+		
 
 };
+
+// Reply.cpp
+void ERR_NORECIPIENT_411(string username, int UserSocket);
+void ERR_NOTEXTTOSEND_412(string username, int UserSocket);
+void ERR_NOSUCHNICK_401(string username, string target, int UserSocket);
+void ERR_NEEDMOREPARAMS_461(string name, int UserSocket, string username);
+void ERR_NOSUCHCHANNEL_403(string username, string target, int UserSocket);
+void ERR_TOOMANYCHANNELS_405(string name, int UserSocket, string username);
+void ERR_UNKNOWNCOMMAND_421(string command, int UserSocket, string username);
+void RPL_AWAY_301(string username, string target, string msg ,int UserSocket);
+void ERR_CANNOTSENDTOCHAN_404(string username, string target, int UserSocket);
+void ERR_NOTONCHANNEL_442(string username, int UserSocket, string ChannelName);
+void ERR_CHANOPRIVSNEEDED_482(string username, int UserSocket, string ChannelName);
+void ERR_BADCHANNELKEY_475(string name, string username, int UserSocket, string IP);
+void ERR_CHANNELISFULL_471(string name, int UserSocket, string username, string IP);
+void ERR_BANNEDFROMCHAN_474(string name, int UserSocket, string username, string IP);
+void ERR_INVITEONLYCHAN_473(string name, int UserSocket, string username, string IP);
+
+// Outils.cpp
+STORE GetSendingList(string data, string &message);
+STORE TokenRangeExtract(string data);
+void	RemoveNewLine(string &str);
+void	GetCommand(const char* buffer, std::string& command, std::string& channel);
+void	RemoveCharacter(int ASCII, string &target);
+void	ExtractTwoRnages(string data, string &ch, string &ky);
+void	CleanInput(std::string &data, char Delimiter);
+bool Protection(string data);
+bool Potection403(string data);
+SYSTEM_KEYVAL	parseChannels(string &input, int SK, string username);
 
 #endif
 

@@ -41,7 +41,7 @@ class Channel
 		int _limit;
 
 		bool _invite_only;
-		//bool _protectedTopic;
+		bool _protectedTopic;
 
 	public:
 
@@ -72,6 +72,25 @@ class Channel
 		void UsersInChannel(int Sokect, std::string username, std::string IP);
 		void setInviteOnly(bool invite_only);
 		void PartFromChannels(std::string member);
+
+		std::string getTopic();
+		void setTopic(std::string topic);
+
+		bool setUserLimit(std::vector<std::string> &m_args, std::string UserName, bool addMode);
+		int getUserLimit(void);
+
+		bool setKey(std::vector<std::string> &m_args, bool addMode, std::string UserName);
+		std::string getKey(void);
+
+		void setProtectedTopic(bool protectedTopic);
+		bool isProtectedTopic();
+
+		int DoesClientExist(const std::string name);
+		void    BroadCastMessage(std::string broadcast);
+
+		bool	SetOperator(std::string name, bool Mode, std::vector<std::string> &m_args);
+
+		std::string GetModes(void);
 
 };
 

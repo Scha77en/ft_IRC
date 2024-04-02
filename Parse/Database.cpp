@@ -24,19 +24,6 @@ Client* Database::GetClient(const std::string& name)
 	return clients[name];
 }
 
-void GetCommand(const char* buffer, std::string& command, std::string& channel) 
-{
-	std::stringstream ss(buffer);
-	ss >> command >> channel;
-}
-
-void RemoveNewLine(string &str)
-{
-	size_t pos = 0;
-	while ((pos = str.find('\n', pos)) != std::string::npos)
-		str.erase(pos, 1);
-}
-
 void Database::SetServerIP(struct in_addr host)
 {
 	this->server_ip = host;
@@ -111,98 +98,6 @@ void Database::NoticeUserLogout(string name, string username)
 	}
 }
 
-void ExtractTwoRnages(string data, string &ch, string &ky) 
-{
-	std::stringstream Process(data);
-
-	Process >> ch >> ky;
-}
-
-STORE TokenRangeExtract(string data)
-{
-	STORE Extracted;
-
-	string MiniToken;
-	std::istringstream Object(data);
-
-	while (std::getline(Object, MiniToken, ','))
-		Extracted.push_back(MiniToken);
-	return (Extracted);
-}
-
-void Error403(int SK, string username, string channel)
-{
-	string output;
-	std::stringstream Respond;
-
-	Respond.str("");
-	Respond << "(403)" << BLUE << " @" + username <<  " " + channel << RED << " :No such channel " << RESET << std::endl;
-	output = Respond.str();
-	send(SK, output.c_str(), output.length(), 0);
-}
-
-SYSTEM_KEYVAL parseChannels(string &input, int SK, string username) 
-{
-	SYSTEM_KEYVAL result;
-	string ch, ky;
-	STORE RangeChannels, RangeKeys;
-
-	ExtractTwoRnages(input, ch, ky);
-
-	RangeChannels = TokenRangeExtract(ch);
-	RangeKeys = TokenRangeExtract(ky);
-
-	for (size_t i = 0; i < RangeChannels.size(); ++i) 
-	{
-		if (i < RangeKeys.size())
-		{
-			if (RangeChannels[i][0] == '#')
-			{
-				RangeChannels[i].erase(RangeChannels[i].begin());
-				result.push_back(std::make_pair(RangeChannels[i], RangeKeys[i]));
-			}
-			else
-			{
-				Error403(SK, username, RangeChannels[i]);
-				return (result);
-			}
-		}
-		else
-		{
-			if (RangeChannels[i][0] == '#')
-			{
-				RangeChannels[i].erase(RangeChannels[i].begin());
-				result.push_back(std::make_pair(RangeChannels[i], ""));
-			}
-			else
-			{
-				Error403(SK, username, RangeChannels[i]);
-				return (result);
-			}
-		}
-	}
-	return result;
-}
-
-bool Protection(string data)
-{
-	int count = 0, i = 0;
-
-	while (data[i])
-	{
-		if (data[i] == ' ')
-			count++;
-		i++;
-	}
-	return (count == i);
-}
-
-bool Potection403(string data)
-{
-	size_t position = data.find('#');
-	return (position == std::string::npos);
-}
-
 void Protection475(string name, string username, int UserSocket, string IP)
 {
 	string output = ":irc.1337.com" + IP + " 475 " + username + " #" + name + " :Cannot join channel (+k) - bad key\n";
@@ -257,17 +152,6 @@ void Database::OutFromAllChannels(int UserSocket)
 }
 */
 
-void ERR_TOOMANYCHANNELS_405(string name, int UserSocket, string username)
-{
-	string output = ":irc.1337.com 405 " + username + " #" + name + " :You have joined too many channels\n";
-	send(UserSocket, output.c_str(), output.length(), 0);
-}
-
-void ERR_NEEDMOREPARAMS_461(string name, int UserSocket, string username)
-{
-	string output = ":irc.1337.com 461 " + username + " " + name + " :Not enough parameters\n";
-	send(UserSocket, output.c_str(), output.length(), 0);
-}
 
 void Database::HandelMultiChannel(string data, int UserSocket)
 {
@@ -398,64 +282,9 @@ void Database::ParseUserInput(string data, int UserSocket)
 		Protection421(command, UserSocket, username);
 }
 
-STORE GetSendingList(string data, string &message)
-{
-	STORE List;
-
-	size_t pos = data.find("::");
-	if (pos != std::string::npos) 
-		data[pos] = ' ';
-
-	std::string Ranges;
-	std::string token;
-	std::stringstream Obj(data);
-	
-	std::getline(Obj, Ranges, ' ');
-	std::getline(Obj, message);
-	
-	std::stringstream Object(Ranges);
-	std::cout << "Ranges : [" + Ranges << "] message : [" + message + "\n";
-	while (std::getline(Object, token, ','))
-	{
-		token.erase(std::remove(token.begin(), token.end(), ' '), token.end());
-		List.push_back(token);
-	}
-	return (List);
-}
-
-void ERR_NORECIPIENT_411(string username, int UserSocket)
-{
-	string output = ":irc.1337.com 411 " + username + " :No recipient given PRIVMSG\n";
-	send(UserSocket, output.c_str(), output.length(), 0);
-}
-
-void ERR_NOSUCHCHANNEL_403(string username, string target, int UserSocket)
-{
-	string output = ":irc.1337.com 403 " + username + " " + target + " :No such channel\n";
-	send(UserSocket, output.c_str(), output.length(), 0);
-}
-
-void ERR_CANNOTSENDTOCHAN_404(string username, string target, int UserSocket)
-{
-	string output = ":irc.1337.com 403 " + username + " " + target + " :Cannot send to channel\n";
-	send(UserSocket, output.c_str(), output.length(), 0);
-}
-
 void ERR_NOSUCHNICK(string username, string target, int UserSocket)
 {
 	string output = ":irc.1337.com 401 " + username + " " + target + " :No such nick/channel\n";
-	send(UserSocket, output.c_str(), output.length(), 0);
-}
-
-void ERR_NOTEXTTOSEND_412(string username, int UserSocket)
-{
-	string output = ":irc.1337.com 412 " + username + " :No text to send\n";
-	send(UserSocket, output.c_str(), output.length(), 0);
-}
-
-void RPL_AWAY_301(string username, string target, string msg ,int UserSocket)
-{
-	string output = ":irc.1337.com 301 " + username + " " + target + " " + msg + "\n";
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
 
