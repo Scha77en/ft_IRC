@@ -59,16 +59,16 @@ class Server
         socklen_t addrlen;
         int server_socket;
         int PORT;
-        int PASSWORD;
+        string PASSWORD;
 
         Database *info;
 
     public:
 
         void SetPort(int port);
-        void SetPassword(int password);
+        void SetPassword(string password);
         int  GetPort();
-        int  GetPassword();
+        string  GetPassword();
         void ServerAddr();
         void RemoveNewLines(string &str);
         // void RegisterClient(int NewClientSocket);

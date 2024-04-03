@@ -12,7 +12,7 @@ void Server::SetPort(int port)
     PORT = port;
 }
 
-void Server::SetPassword(int password)
+void Server::SetPassword(string password)
 {
     PASSWORD = password;
 }
@@ -22,7 +22,7 @@ int Server::GetPort()
     return PORT;
 }
 
-int Server::GetPassword()
+string Server::GetPassword()
 {
     return PASSWORD;
 }
@@ -38,7 +38,7 @@ Server* Server::getInstance(std::string _PORT, std::string _PASSWORD)
             exit(EXIT_FAILURE);
         }
         instance->SetPort(std::atoi(_PORT.c_str()));
-        instance->SetPassword(std::atoi(_PASSWORD.c_str()));
+        instance->SetPassword(_PASSWORD);
     }
     return instance;
 }
@@ -336,7 +336,7 @@ void Server::authenticate(std::string &cmd, int NewClientSocket)
         send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
     else if (client->GetConnection() == 0)
     {
-        int pass = std::atoi(cmd.c_str());
+        string pass = cmd;
         if (pass == PASSWORD)
         {
             std::cout << "Password is correct.\n";
