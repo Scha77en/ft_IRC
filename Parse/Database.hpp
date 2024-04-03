@@ -17,27 +17,27 @@
 
 
 // ------------------ TOPIC RPL AND ERR MESSAGES ------------------
-
-#define RPL_TOPIC(client, channel, topic) ":irc.1337.com 332 " + client + " #" + channel + " :" + topic + "\n"
-#define RPL_NOTOPIC(client, channel) ":irc.1337.com 331 " + client + " #" + channel + " :No topic is set\n"
+// #define RPL_TOPICIS(nickname, channelname, topic) (": 332 " + nickname + " #" +channelname + " :" + topic + "\r\n")
+#define RPL_TOPIC(client, channel, topic) ": 332 " + client + " " + channel + " :" + topic + "\r\n"
+#define RPL_NOTOPIC(client, channel) ":irc.1337.com 331 " + client + " " + channel + " :No topic is set\r\n"
 #define ERR_NEEDMOREPARAMS(client, command) ":irc.1337.com 461 " + client + " " + command + " :Not enough parameters\n"
-#define ERR_NOSUCHCHANNEL(client, channel) ":irc.1337.com 403 " + client + " #" + channel + " :No such channel\n"
-#define ERR_NOTONCHANNEL(client, channel) ":irc.1337.com 442 " + client + " #" + channel + " :You're not on that channel\n"
-#define ERR_CHANOPRIVSNEEDED(client, channel) ":irc.1337.com 482 " + client + " #" + channel + " :You're not channel operator\n"
+#define ERR_NOSUCHCHANNEL(client, channel) ":irc.1337.com 403 " + client + " " + channel + " :No such channel\n"
+#define ERR_NOTONCHANNEL(client, channel) ":irc.1337.com 442 " + client + " " + channel + " :You're not on that channel\n"
+#define ERR_CHANOPRIVSNEEDED(client, channel) ":irc.1337.com 482 " + client + " " + channel + " :You're not channel operator\n"
 
 // ------------------ MODE RPL AND ERR MESSAGES ------------------
 
-#define ERR_CHANNELISFULL(client, channel) ":irc.1337.com 471 " + client + " #" + channel + " :Cannot join channel (+l)\n"
-#define ERR_INVITEONLYCHAN(client, channel) ":irc.1337.com 473 " + client + " #" + channel + " :Cannot join channel (+i)\n"
-#define ERR_BADCHANNELKEY(client, channel) ":irc.1337.com 475 " + client + " #" + channel + " :Cannot join channel (+k)\n"
-#define ERR_CHANOPRIVSNEEDED(client, channel) ":irc.1337.com 482 " + client + " #" + channel + " :You're not channel operator\n"
-#define RPL_CHANNELMODEIS(client, channel, mode) ":irc.1337.com 324 " + client + " #" + channel + " " + mode + "\n"
+#define ERR_CHANNELISFULL(client, channel) ":irc.1337.com 471 " + client + " " + channel + " :Cannot join channel (+l)\n"
+#define ERR_INVITEONLYCHAN(client, channel) ":irc.1337.com 473 " + client + " " + channel + " :Cannot join channel (+i)\n"
+#define ERR_BADCHANNELKEY(client, channel) ":irc.1337.com 475 " + client + " " + channel + " :Cannot join channel (+k)\n"
+#define ERR_CHANOPRIVSNEEDED(client, channel) ":irc.1337.com 482 " + client + " " + channel + " :You're not channel operator\n"
+#define RPL_CHANNELMODEIS(client, channel, mode) ":irc.1337.com 324 " + client + " " + channel + " " + mode + "\n"
 #define ERR_UNKNOWNMODE(client, mode) ":irc.1337.com 472 " + client + " " + mode + " :is unknown mode char to me\n"
-#define ERR_INVALIDMODEPARAM_O(client, channel, mode) ":irc.1337.com 696 " + client + " #" + channel + " " + mode + " :You must specify a target for the operator mode (+/-)o <target>.\n"
-#define ERR_INVALIDMODEPARAM_K(client, channel, mode) ":irc.1337.com 696 " + client + " #" + channel + " " + mode + " :You must specify a key for the key mode (+/-)k <key>.\n"
-#define ERR_INVALIDMODEPARAM_L(client, channel, mode) ":irc.1337.com 696 " + client + " #" + channel + " " + mode + " :You must specify a limit for the limit mode (+/-)l <limit>.\n"
+#define ERR_INVALIDMODEPARAM_O(client, channel, mode) ":irc.1337.com 696 " + client + " " + channel + " " + mode + " :You must specify a target for the operator mode (+/-)o <target>.\n"
+#define ERR_INVALIDMODEPARAM_K(client, channel, mode) ":irc.1337.com 696 " + client + " " + channel + " " + mode + " :You must specify a key for the key mode (+/-)k <key>.\n"
+#define ERR_INVALIDMODEPARAM_L(client, channel, mode) ":irc.1337.com 696 " + client + " " + channel + " " + mode + " :You must specify a limit for the limit mode (+/-)l <limit>.\n"
 #define ERR_NOSUCHNICK_(client, target) ":irc.1337.com 401 " + client + " " + target + " :No such nick/channel\n"
-#define ERR_USERNOTINCHANNEL(client, target, channel) ":irc.1337.com 441 " + client + " " + target + " #" + channel + " :They aren't on that channel\n"
+#define ERR_USERNOTINCHANNEL(client, target, channel) ":irc.1337.com 441 " + client + " " + target + " " + channel + " :They aren't on that channel\n"
 
 // ------------------ INVITE RPL AND ERR MESSAGES ------------------
 

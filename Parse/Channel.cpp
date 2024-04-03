@@ -112,7 +112,7 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     std::string output;
     std::stringstream Respond;
 
-    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << "#" + ChannelName() + " :";
+    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << "" + ChannelName() + " :";
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)
@@ -233,11 +233,17 @@ bool Channel::isProtectedTopic()
 
 int Channel::DoesClientExist(const std::string name)
 {
-    if (std::find(_admins.begin(), _admins.end(), name) != _admins.end())
+    string Channel_N(name);
+    
+    if (Channel_N.empty() || Channel_N.back() != '\0')
+        Channel_N.push_back('\0');
+
+    std::cout << "User name = " << Channel_N << std::endl;
+    if (std::find(_admins.begin(), _admins.end(), Channel_N) != _admins.end())
         return (1);
-    else if (std::find(_members.begin(), _members.end(), name) != _members.end())
+    else if (std::find(_members.begin(), _members.end(), Channel_N) != _members.end())
         return (2);
-    else if (std::find(_invited.begin(), _invited.end(), name) != _invited.end())
+    else if (std::find(_invited.begin(), _invited.end(), Channel_N) != _invited.end())
         return (3);
     return (0);
 }
