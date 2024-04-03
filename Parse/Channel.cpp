@@ -314,6 +314,11 @@ bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
     return true;
 }
 
+void Channel::AddInvited(std::string target)
+{
+    _invited.push_back(target);
+}
+
 std::string    Channel::GetModes() {
     std::string modes = "";
     if (this->_invite_only)

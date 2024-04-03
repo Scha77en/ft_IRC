@@ -270,6 +270,12 @@ void Database::HandelMultiChannel(string data, int UserSocket)
             }
             if (channel->isInviteOnly())
             {
+				int state = channel->DoesClientExist(username);
+				if (state == 3) {
+					channel->addMember(username);
+					NoticeUserHasJoined(EXIST, username, UserSocket, IP);
+					continue;
+				}
                 ERR_INVITEONLYCHAN_473(EXIST, UserSocket, username, IP);
                 continue;
             }
@@ -766,13 +772,13 @@ void    Database::HandleMode(std::string data, int UserSocket)
 	std::stringstream ss(data);
 
 	std::string UserName = GetUserBySocket(UserSocket);
-	std::string	command, C_N, modes, remain;
+	std::string	command, C_N, Modes_, remain;
 
-	ss >> command >> C_N >> modes;
+	ss >> command >> C_N >> Modes_;
 
 	std::cout << "command : " << command << std::endl;
 	std::cout << "C_N : " << C_N << std::endl;
-	std::cout << "modes : " << modes << std::endl;
+	std::cout << "Modes_ : " << Modes_ << std::endl;
 
 	std::vector<std::string> m_args;
 
@@ -780,7 +786,15 @@ void    Database::HandleMode(std::string data, int UserSocket)
 		m_args.push_back(remain);
 
 	string channelName(C_N);
+	string modes(Modes_);
     
+	if (modes.empty() || modes.back() != '\0')
+        modes.push_back('\0');
+
+	if (modes[0] == '\0') {
+		modes = "";
+	}
+
     if (channelName.empty() || channelName.back() != '\0')
         channelName.push_back('\0');
 
@@ -788,6 +802,7 @@ void    Database::HandleMode(std::string data, int UserSocket)
 		ERR_461_NEEDMOREPARAMS(UserName, command, UserSocket);
 		return ;
 	}
+
 	channelName = ExtractChannelName(channelName);
 	if (channelName.empty()) {
 		ERR_403_NOSUCHCHANNEL(UserName, channelName, UserSocket);
@@ -812,7 +827,7 @@ void    Database::HandleMode(std::string data, int UserSocket)
 
 	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
 	
-	for (size_t i = 0; i < modes.size(); i++) {
+	for (size_t i = 0; i < modes.size() - 1; i++) {
 		char c = modes[i];
 		if (c == '+' || c == '-') {
 			addMode = (c == '+');
@@ -826,21 +841,36 @@ void    Database::HandleMode(std::string data, int UserSocket)
 void	Database::HandleInvite(std::string data, int UserSocket)
 {
 	int state;
-	std::string command, username, channelName, target;
+	std::string command, username, C_N, target;
 
 	std::stringstream ss(data);
-	ss >> command >> target >> channelName;
+	ss >> command >> C_N >> target;
 	username = GetUserBySocket(UserSocket);
 
-	if (channelName.empty()) {
+	std::cout << "command : " << command << std::endl;
+	std::cout << "username : " << username << std::endl;
+	std::cout << "C_N : " << C_N << std::endl;
+
+	std::string channelName(C_N);
+
+	std::cout << "[1] channelName : " << channelName << " length" << channelName.length() << std::endl;
+	
+	if (channelName.empty() || channelName.back() != '\0')
+		channelName.push_back('\0');
+
+	if (channelName[0] == '\0') {
 		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
 		return ;
 	}
+
 	channelName = ExtractChannelName(channelName);
+
+	std::cout << "[2] channelName : " << channelName << " length" << channelName.length() << std::endl;
 	if (channelName.empty()) {
 		ERR_403_NOSUCHCHANNEL(username, channelName, UserSocket);
 		return ;
 	}
+
 
 	std::map<std::string, Channel *>::iterator it = channels.find(channelName);
 	std::map<std::string, Channel *>::iterator iter = channels.find(channelName);
@@ -857,6 +887,8 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 		state = it->second->DoesClientExist(target);
 		if (state == 0 || state == 3) {
 			RPL_341_INVITING(username, target, channelName, UserSocket);
+			std::string notice = ":" + username + " INVITE " + target + " " + channelName + "\n";
+			send(GetUserSocket(target), notice.c_str(), notice.length(), 0);
 			return ;
 		}
 		else {
@@ -1060,6 +1092,8 @@ void	Database::ERR_441_USERNOTINCHANNEL(std::string UserName, std::string target
 
 void	Database::RPL_341_INVITING(std::string UserName, std::string target, std::string channel, int UserSocket)
 {
+	Channel *channel_ = channels[channel];
+	channel_->AddInvited(target);
 	std::string error = RPL_INVITING(UserName, target, channel);
 	send(UserSocket, error.c_str(), error.length(), 0);
 }

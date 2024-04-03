@@ -73,6 +73,8 @@ class Channel
 		void setInviteOnly(bool invite_only);
 		void PartFromChannels(std::string member);
 
+		void	AddInvited(std::string target);
+
 		std::string getTopic();
 		void setTopic(std::string topic);
 
