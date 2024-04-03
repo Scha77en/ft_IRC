@@ -1,42 +1,34 @@
-NAME		= ircserv
-CC			= c++  -g 
-FLAGS		= -Wall -Wextra -Werror  -std=c++98 
-OBJDIR 		= .obj
+NAME = ircserv
 
-FILES		= 	Src/Server/Server \
-				Src/Manage/Manage \
-				Src/Client/Client \
-				Src/Channel/Channel \
-				Src/singleton/singleton \
-				Src/main
+CPP = c++
 
-HEADER		=	Src/Manage/Manage.hpp \
-				Src/Server/Server.hpp \
-				Src/Client/Client.hpp \
-				Src/singleton/singleton.hpp \
-				Src/Channel/Channel.hpp \
+CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
-SRC			= $(FILES:=.cpp)
-OBJ			= $(addprefix $(OBJDIR)/, $(FILES:=.o))
+HEADER_P = Parse/Server.hpp Parse/Channel.hpp Parse/Database.hpp Parse/Client.hpp
 
-all: $(NAME)
+# Directories
+SRCDIR = Parse
+BINDIR = bin
 
-$(NAME): $(OBJ) $(HEADER)
-	@$(CC) $(FLAGS) $(OBJ)   -o $(NAME) 
-	@echo "🛰️  Server Ready!"
+# Source files
+SOURCES = $(wildcard $(SRCDIR)/*.cpp)
 
-$(OBJDIR)/%.o: %.cpp $(HEADER)  Makefile
-	@mkdir -p $(dir $@)
-	@$(CC) $(FLAGS) -g -c $< -o $@ 
+# Object files
+OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(BINDIR)/%.o)
 
-clean: 
-	@rm -rf $(OBJDIR) $(OBJ)
-	@echo  "🗑️   Deleting OBJS."
+all:$(NAME)
+
+$(NAME): $(OBJECTS)
+	@$(CPP) $(CPPFLAGS) $^ -o $@
+
+# Object file rule
+$(BINDIR)/%.o: $(SRCDIR)/%.cpp $(HEADER_P)
+	@$(CPP) $(CPPFLAGS) -c $< -o $@
+
 
 fclean: clean
-	@rm -rf  $(NAME)
-	@echo  "🗑️   Deleting $(NAME)."
+	@rm -f $(NAME)
+clean:
+	@rm -f $(BINDIR)/*.o
 
 re: fclean all
-
-.PHONY: all clean fclean re
