@@ -27,6 +27,16 @@ string Server::GetPassword()
     return PASSWORD;
 }
 
+void Server::Setdt(string dt)
+{
+    this->dt = dt;
+}
+
+string Server::Getdt()
+{
+    return this->dt;
+}
+
 Server* Server::getInstance(std::string _PORT, std::string _PASSWORD)
 {
     if (instance == undefine) 
@@ -43,24 +53,18 @@ Server* Server::getInstance(std::string _PORT, std::string _PASSWORD)
     return instance;
 }
 
-void Extract(const char* buffer, std::string& Value, string &command) 
-{
-    std::stringstream ss(buffer);
-    ss >> command >> Value;
-}
-
 void Server::send_reponse(std::string response, int fd)
 {
-	std::cout << "Response:\n" << response;
+	std::cout << "Response: " << response;
 	if(send(fd, response.c_str(), response.size(), 0) == -1)
 		std::cerr << "Response send() faild" << std::endl;
 }
 
-void WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
+void Server::WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
 {
     string M001 = ":irc.1337.com 001 "+username+" :Welcome to the Internet Relay Network "+username+"!"+user+"@"+hostname+"\n";
     string M002 = ":irc.1337.com 002 "+username+" :Your host is "+hostname+", running version InspIRCd-3.10\n";
-    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + "<date>" + "\n"; 
+    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + this->Getdt() + "\n"; 
     string M004 = ":irc.1337.com 004 "+username+" irc.1337.com InspIRCd-3.10 iobl\n";
     string M005 = ":irc.1337.com 005 "+username+" CHANTYPES=# :are supported by this server\n";
     send(NewClientSocket, M001.c_str(), M001.length(), 0);
@@ -73,7 +77,7 @@ void WelcomeMsg(int NewClientSocket,string username, string user, string hostnam
 bool Server::ProcessClient() 
 {
     // struct pollfd newpoll;
-    while (true) 
+    while (true)
     {
         int num_ready = poll(&fds[0], fds.size(), -1);
         if (num_ready <= 0)
@@ -184,6 +188,7 @@ void Server::closeFDS()
     if (server_socket != undefine)
         close(server_socket);
 }
+
 Client *Server::GetClient(int fd)
 {
     for (size_t i = 0; i < clients.size(); i++)
@@ -365,17 +370,11 @@ std::vector<std::string> Server::spliting_command(string &command)
     return command_;
 }
 
-void Server::RemoveNewLines(string &str) 
-{
-    size_t pos = 0;
-    while ((pos = str.find('\n', pos)) != std::string::npos)
-        str.erase(pos, 1);
-    while ((pos = str.find('\r', pos)) != std::string::npos)
-        str.erase(pos, 1);
-}
-
 bool Server::ServerCreate()
-{   
+{
+    time_t now = time(0);
+    this->Setdt(ctime(&now));
+
     // Create a new socket
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
     {

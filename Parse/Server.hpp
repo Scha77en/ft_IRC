@@ -13,6 +13,7 @@
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <poll.h>
+#include <ctime>
 
 #include "Channel.hpp"
 #include "Database.hpp"
@@ -60,23 +61,26 @@ class Server
         int server_socket;
         int PORT;
         string PASSWORD;
+        string dt;
 
         Database *info;
 
     public:
 
+        void Setdt(string dt);
+        string Getdt();
         void SetPort(int port);
         void SetPassword(string password);
         int  GetPort();
         string  GetPassword();
         void ServerAddr();
-        void RemoveNewLines(string &str);
         // void RegisterClient(int NewClientSocket);
 
         Client *GetClient(int fd);
         std::vector<std::string> split_buffer(string buffer);
         std::vector<std::string> spliting_command(string &command);
         
+        void WelcomeMsg(int NewClientSocket, string username, string user,string hostname);
         void removeClient(int fd);
         void removeFDS(int fd);
         bool checkNickName(std::string &command);
