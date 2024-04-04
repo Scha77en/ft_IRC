@@ -95,11 +95,13 @@ bool Server::ProcessClient()
                     int new_client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addrlen);
                     if (new_client_socket == -1)
                     {
-                        std::cerr << "Error: Accept failed.\n";
+                        send_reponse(ERR_UNABLETOCONNECT(std::string ("#")), new_client_socket);
+                        std::cerr << "Error: Unable to connect to server (Connection timed out).\n";
                         return EXIT_FAILURE;
                     }
                     if (fcntl(new_client_socket, F_SETFL, O_NONBLOCK) == -1) 
                     {
+                        send_reponse(ERR_UNABLETOCONNECT(std::string ("#")), new_client_socket);
                         std::cerr << "Error: Fcntl failed.\n";
                         return EXIT_FAILURE;
                     }
@@ -253,7 +255,7 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
     Client *client = GetClient(NewClientSocket);
     if (client->GetConnection() == 0)
     {
-        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+        send_reponse(ERR_NOTREGISTERED(std::string ("#")), NewClientSocket);
         return;
     }
     cmd = cmd.substr(4); // Remove USER
@@ -266,7 +268,7 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
     }
     if (pos == std::string::npos || cmd.empty())
     {
-        send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
+        send_reponse(ERR_NOTENOUGHPARAM(std::string ("#")), NewClientSocket);
         return;
     }
     else if (client->GetUsername().empty())
@@ -284,7 +286,7 @@ void Server::Set_nickname(std::string &cmd, int NewClientSocket)
     Client *client = GetClient(NewClientSocket);
     if (client->GetConnection() == 0) // Check if the client is connected
     {
-        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+        send_reponse(ERR_NOTREGISTERED(std::string ("#")), NewClientSocket);
         return;
     }
     cmd = cmd.substr(4); // Remove NICK
@@ -297,7 +299,7 @@ void Server::Set_nickname(std::string &cmd, int NewClientSocket)
     }
     if (pos == std::string::npos || cmd.empty()) // Check if the nickname is empty
     {
-        send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
+        send_reponse(ERR_NOTENOUGHPARAM(std::string ("#")), NewClientSocket);
         return;
     }
     else if (client->GetName().empty()) // Check if the nickname is already set
@@ -338,7 +340,7 @@ void Server::authenticate(std::string &cmd, int NewClientSocket)
             cmd.erase(cmd.begin());
     }
     if (pos == std::string::npos || cmd.empty())
-        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+        send_reponse(ERR_NOTREGISTERED(std::string ("#")), NewClientSocket);
     else if (client->GetConnection() == 0)
     {
         string pass = cmd;
