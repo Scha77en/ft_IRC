@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Database.hpp"
 
 Server   *Server::instance = undefine;
 
@@ -7,48 +8,64 @@ void Server::ServerAddr()
     std::cout << "[LOCATION] => " << instance << std::endl;
 }
 
-Server* Server::getInstance()
+void Server::SetPort(int port)
+{
+    PORT = port;
+}
+
+void Server::SetPassword(string password)
+{
+    PASSWORD = password;
+}
+
+int Server::GetPort()
+{
+    return PORT;
+}
+
+string Server::GetPassword()
+{
+    return PASSWORD;
+}
+
+void Server::Setdt(string dt)
+{
+    this->dt = dt;
+}
+
+string Server::Getdt()
+{
+    return this->dt;
+}
+
+Server* Server::getInstance(std::string _PORT, std::string _PASSWORD)
 {
     if (instance == undefine) 
+    {
         instance = new Server();
+        if (std::atoi(_PORT.c_str()) < 1024 || std::atoi(_PORT.c_str()) > 65535)
+        {
+            std::cerr << "Error: Invalid port number.\n";
+            exit(EXIT_FAILURE);
+        }
+        instance->SetPort(std::atoi(_PORT.c_str()));
+        instance->SetPassword(_PASSWORD);
+    }
     return instance;
 }
 
-void Extract(const char* buffer, std::string& Value, string &command) 
+void Server::send_reponse(std::string response, int fd)
 {
-    std::stringstream ss(buffer);
-    ss >> command >> Value;
+	std::cout << "Response: " << response;
+	if(send(fd, response.c_str(), response.size(), 0) == -1)
+		std::cerr << "Response send() faild" << std::endl;
 }
 
-bool Server::GetDataInformation(int NewClientSocket, string &command, string &output)
-{
-    string CHECK = "";
-    char BUFFER[BUFFER_SIZE];
-
-    int bytes_received = recv(NewClientSocket, BUFFER, sizeof(BUFFER), 0);
-    if (bytes_received <= 0)
-        return undefine;
-    BUFFER[bytes_received] = '\0';
-    string Received(BUFFER);
-    RemoveNewLines(Received);
-    Extract(BUFFER, Received, CHECK);
-    char* charPtr = const_cast<char*>(CHECK.c_str());
-    for (size_t i = 0; i < strlen(charPtr); ++i)
-        charPtr[i] = std::toupper(charPtr[i]);
-    string UpperCheck(charPtr);
-    //std::cout << "command => [" + UpperCheck + "]" << std::endl;
-    if (command != UpperCheck || Received.empty())
-        return undefine;
-    //std::cout << "Value => [" + Received + "]" << std::endl;
-    output = Received;
-    return (1);
-}
-
-void WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
+void Server::WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
 {
     string M001 = ":irc.1337.com 001 "+username+" :Welcome to the Internet Relay Network "+username+"!"+user+"@"+hostname+"\n";
     string M002 = ":irc.1337.com 002 "+username+" :Your host is "+hostname+", running version InspIRCd-3.10\n";
-    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + "<date>" + "\n"; 
+    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + this->Getdt() + "\n"; 
     string M004 = ":irc.1337.com 004 "+username+" irc.1337.com InspIRCd-3.10 iobl\n";
     string M005 = ":irc.1337.com 005 "+username+" CHANTYPES=# :are supported by this server\n";
     send(NewClientSocket, M001.c_str(), M001.length(), 0);
@@ -58,160 +75,339 @@ void WelcomeMsg(int NewClientSocket,string username, string user, string hostnam
     send(NewClientSocket, M005.c_str(), M005.length(), 0);
 }
 
-bool Server::ProccessUserData(int NewClientSocket, struct in_addr ClientIP)
-{
-    bool is_log = 1;
-    string command = "";
-
-    info = Database::GetInstance();
-
-    command = "PASS";
-    string password = "";
-    if (!GetDataInformation(NewClientSocket, command, password))
-        is_log = undefine;
-    if (is_log == undefine)
-        return (undefine);
-    command = "NICK";
-    string username = "";
-    if (!GetDataInformation(NewClientSocket, command, username))
-        is_log = undefine;
-    if (is_log == undefine)
-        return (undefine);
-    command = "USER";
-    string name = "";
-    if (!GetDataInformation(NewClientSocket, command, name))
-        is_log = undefine;
-    if (is_log == undefine)
-        return (undefine);
-    
-    if (username.empty() || username.back() != '\0')
-            username.push_back('\0');
-
-    info->AddClient(username);
-    Client * NewClient = info->GetClient(username);
-    NewClient->SetName(name);
-    NewClient->SetConnection(1);
-    NewClient->SetPass(password);
-    NewClient->NewClient(NewClientSocket);
-    NewClient->NewClientIP(ClientIP);
-    string hostname(inet_ntoa(ClientIP));
-    WelcomeMsg(NewClientSocket,username, name, hostname);
-    return TRUE;
-}
-
-/*
-std::string  welcome = ":ayman.irc.chat 001 c1 :Welcome to the irc.Chat Internet Relay Chat Network c1\r\n";
-
-    std::cout << "-->" << welcome << std::endl;
-
-*/
-
-/*
-nc localhost 5554 (Copy and past)
-PASS 369
-NICK atye3
-USER tyue
-*/
-
-void Server::StartSession()
-{
-    char BUFFER[BUFFER_SIZE];
-
-    for (int i = 1; i < MAX_CLIENTS; ++i)
-    {
-        if (fds[i].fd != undefine && (fds[i].revents & POLLIN)) 
-        {
-            info = Database::GetInstance();
-            if (info->GetUserBySocket(fds[i].fd).empty())
-                ProccessUserData(fds[i].fd, client_ips[i]);
-            else
-            {
-                int bytes_received = recv(fds[i].fd, BUFFER, BUFFER_SIZE - 1, 0);
-                if (bytes_received > 0)
-                {
-                    BUFFER[bytes_received] = '\0';
-                    string Received(BUFFER);
-                    RemoveNewLines(Received);
-                    int x = 0;
-                    while (Received[x])
-                    {
-                        if ((int)Received[x] == 13)
-                        {
-                            Received[x] = '\0';
-                            break;
-                        }
-                        x++;
-                    }
-                    std::cout <<  "# Received : [" + Received + "]" << std::endl;
-                    info->ParseUserInput(Received, fds[i].fd);
-                }
-
-            }
-            /*
-            else if (bytes_received == 0) 
-            {
-                close(fds[i].fd);
-                fds[i].fd = undefine;
-            } 
-            else 
-            {
-                close(fds[i].fd);
-                fds[i].fd = undefine;
-            }
-            */
-        }
-    }
-}
-
 bool Server::ProcessClient() 
 {
-    while (true) 
+    // struct pollfd newpoll;
+    info = Database::GetInstance();
+    while (true)
     {
-        int num_ready = poll(fds, MAX_CLIENTS, -1);
+        int num_ready = poll(&fds[0], fds.size(), -1);
         if (num_ready <= 0)
-            continue;
-        if (fds[0].revents & POLLIN) 
+            throw std::runtime_error("poll failed");
+        for (size_t i = 0; i < fds.size(); ++i)
         {
-            struct sockaddr_in client_addr;
-            socklen_t CL_addrlen = sizeof(client_addr);
-            int NewClientSocket = accept(server_socket, (struct sockaddr *)&client_addr, &CL_addrlen);
-            if (NewClientSocket == -1)
-                continue;
-            
-            int empty_slot = -1;
-            for (int i = 1; i < MAX_CLIENTS; ++i) 
+            if (fds.at(i).revents & POLLIN)
             {
-                if (fds[i].fd == undefine) 
+                if (fds[i].fd == server_socket)
                 {
-                    empty_slot = i;
-                    fds[i].fd = NewClientSocket;
-                    client_ips[i] = client_addr.sin_addr;
-                    break;
+                    Client new_client;
+                    struct sockaddr_in client_addr;
+                    struct pollfd newfd;
+                    socklen_t addrlen = sizeof(client_addr);
+                    int new_client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addrlen);
+                    if (new_client_socket == -1)
+                    {
+                        std::cerr << "Error: Accept failed.\n";
+                        return EXIT_FAILURE;
+                    }
+                    if (fcntl(new_client_socket, F_SETFL, O_NONBLOCK) == -1) 
+                    {
+                        std::cerr << "Error: Fcntl failed.\n";
+                        return EXIT_FAILURE;
+                    }
+                    newfd.fd = new_client_socket;
+                    newfd.events = POLLIN;
+                    newfd.revents = 0;
+
+                    new_client.NewClient(new_client_socket);
+                    new_client.NewClientIP(client_addr.sin_addr);
+                    clients.push_back(new_client);
+                    fds.push_back(newfd);
+                    std::cout << "New client connected " << new_client_socket << " from " << inet_ntoa(client_addr.sin_addr) << "\n";
+                }
+                else
+                {
+                    std::vector<std::string> command;
+                    char buffer[BUFFER_SIZE];
+                    memset(buffer, 0, BUFFER_SIZE);
+                    int bytes_received = recv(fds.at(i).fd, buffer, BUFFER_SIZE, 0);
+                    if (bytes_received <= 0) 
+                    {
+                        close(fds.at(i).fd);
+                        std::cout << "Client disconnected " << fds.at(i).fd << "\n";
+                        // removeClientFromChannel(fds.at(i).fd);
+                        removeFDS(fds.at(i).fd);
+                        removeClient(fds.at(i).fd);
+                    } 
+                    else
+                    {
+                        info = Database::GetInstance();
+                        Client *currClient = GetClient(fds.at(i).fd);
+                        currClient->bufferClient = buffer;
+                        size_t pos = currClient->bufferClient.find_first_of("\r\n");
+                        if (pos == std::string::npos)
+                            continue;
+                        command = split_buffer(currClient->bufferClient);
+                        for (size_t j = 0; j < command.size(); j++)
+                        {
+                                checkPass(command.at(j), fds.at(i).fd);
+                        }
+                        if (!currClient->GetName().empty() && !currClient->GetUsername().empty() && !currClient->GetPass().empty() && currClient->GetConnection() == 1 && currClient->GetAuth() == 1)
+                        {
+                            if (currClient->GetAuth() == 1) {
+                                info->AddClient(currClient);
+                                WelcomeMsg(fds.at(i).fd, currClient->GetUsername(), currClient->GetName(), currClient->GetClientIP());
+                            }
+                            currClient->SetAuth(0);
+                        }
+                    }
                 }
             }
-            if (empty_slot == -1)
-            {
-                close(NewClientSocket);
-                continue;
-            }
         }
-        this->StartSession();
     }
+    close(server_socket);
     return EXIT_SUCCESS;
 }
 
+// void Server::removeClientFromChannel(int fd)
+// {
+//     //remove channel
+//     info = Database::GetInstance();
+//     // delete client from all channels
+//     for (size_t i = 0; i < clients.size(); i++)
+//     {
+//         if (clients.at(i).GetSocket() == fd)
+//         {
+//             for (size_t j = 0; j < clients.at(i).GetAllChannels().size(); j++)
+//             {
+//                 info->HandelMultiPART(clients.at(i).GetAllChannels().at(j), fd);
+//             }
+//         }
+//     }
+// }
 
-void Server::RemoveNewLines(string &str) 
+void Server::removeClient(int fd)
 {
-    size_t pos = 0;
-    while ((pos = str.find('\n', pos)) != std::string::npos)
-        str.erase(pos, 1);
-    while ((pos = str.find('\r', pos)) != std::string::npos)
-        str.erase(pos, 1);
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        if (clients.at(i).GetSocket() == fd)
+        {
+            clients.erase(clients.begin() + i);
+            break;
+        }
+    }
+}
+
+void Server::removeFDS(int fd)
+{
+    for (size_t i = 0; i < fds.size(); i++)
+    {
+        if (fds.at(i).fd == fd)
+        {
+            fds.erase(fds.begin() + i);
+            break;
+        }
+    }
+}
+
+void Server::closeFDS()
+{
+    for (size_t i = 0; i < fds.size(); i++)
+    {
+        std::cout << "Client ==> " << clients.at(i).GetSocket() << " disconnected.\n";
+        close(clients.at(i).GetSocket());
+    }
+    if (server_socket != undefine)
+        close(server_socket);
+}
+
+Client *Server::GetClient(int fd)
+{
+    for (size_t i = 0; i < clients.size(); i++)
+    {
+        if (clients.at(i).GetSocket() == fd)
+            return &clients.at(i);
+    }
+    return NULL;
+}
+
+std::vector<std::string> Server::split_buffer(string buffer)
+{
+    std::vector<std::string> command;
+    std::string token;
+    std::istringstream tokenStream(buffer);
+    while (std::getline(tokenStream, token))
+    {
+        size_t pos = token.find_first_of("\r\n");
+        if (pos != std::string::npos)
+            token = token.substr(0, pos);
+        command.push_back(token);
+    }
+    return command;
+}
+
+void Server::checkPass(std::string &cmd, int NewClientSocket)
+{
+    if (cmd.empty())
+        return;
+    std::cout << "[1] -- Command: " << cmd << std::endl;
+    Client *client = GetClient(NewClientSocket);
+    info = Database::GetInstance();
+    std::vector<std::string> command;
+    command = spliting_command(cmd);
+    size_t pos = cmd.find_first_of("\r\n");
+    if (pos != std::string::npos)
+        cmd = cmd.substr(pos);
+    if ((command.at(0) == "PASS" || command.at(0) == "pass") && command.size())
+        authenticate(cmd, NewClientSocket);
+    else if ((command.at(0) == "NICK" || command.at(0) == "nick") && command.size())
+        Set_nickname(cmd, NewClientSocket);
+    else if ((command.at(0) == "USER" || command.at(0) == "user") && command.size())
+        Set_username(cmd, NewClientSocket);
+    else if (client->GetConnection() == 1 && command.size() && client->GetAuth() == 0)
+    {
+        std::cout << "[2] -- Command: " << cmd << std::endl;
+        if ((command.at(0) == "JOIN" || command.at(0) == "join") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "TOPIC" || command.at(0) == "topic") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "MODE" || command.at(0) == "mode") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "INVITE" || command.at(0) == "invite") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "PART" || command.at(0) == "part") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "LIST" || command.at(0) == "list") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "PRIVMSG" || command.at(0) == "privmsg") && command.size())
+        info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "QUIT" || command.at(0) == "quit") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if (command.size())
+            send_reponse(ERR_UNKNOWNCOMMAND(command.at(0)), NewClientSocket);
+    }
+    else if (command.size())
+        send_reponse(ERR_UNKNOWNCOMMAND(command.at(0)), NewClientSocket);
+}
+
+void Server::Set_username(std::string &cmd, int NewClientSocket)
+{
+    Client *client = GetClient(NewClientSocket);
+    if (client->GetConnection() == 0)
+    {
+        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+        return;
+    }
+    cmd = cmd.substr(4); // Remove USER
+    size_t pos = cmd.find_first_not_of("\t\v ");
+    if (pos < cmd.size())
+    {
+        cmd = cmd.substr(pos);
+        if (cmd[0] == ':')
+            cmd.erase(cmd.begin());
+    }
+    if (pos == std::string::npos || cmd.empty())
+    {
+        send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
+        return;
+    }
+    else if (client->GetUsername().empty())
+    {
+        std::cout << "Username is set to " << cmd << ".\n";
+        client->setUsername(cmd);
+        client->SetAuth(1);
+    }
+    else
+        send_reponse(ERR_ALREADYREGISTERED(client->GetName()), NewClientSocket);
+}
+
+void Server::Set_nickname(std::string &cmd, int NewClientSocket)
+{
+    Client *client = GetClient(NewClientSocket);
+    if (client->GetConnection() == 0) // Check if the client is connected
+    {
+        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+        return;
+    }
+    cmd = cmd.substr(4); // Remove NICK
+    size_t pos = cmd.find_first_not_of("\t\v ");
+    if (pos < cmd.size())
+    {
+        cmd = cmd.substr(pos);
+        if (cmd[0] == ':')
+            cmd.erase(cmd.begin());
+    }
+    if (pos == std::string::npos || cmd.empty()) // Check if the nickname is empty
+    {
+        send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
+        return;
+    }
+    else if (client->GetName().empty()) // Check if the nickname is already set
+    {
+        if (checkNickName(cmd))
+        {
+            send_reponse(ERR_NICKINUSE(cmd), NewClientSocket);
+            return;
+        }
+        std::cout << "Nickname is set to " << cmd << ".\n";
+        client->SetName(cmd);
+        client->SetAuth(1);
+    }
+    else
+        send_reponse(ERR_ERRONEUSNICK(cmd), NewClientSocket);
+}
+
+bool Server::checkNickName(std::string& nickname)
+{
+	for (size_t i = 0; i < this->clients.size(); i++)
+	{
+		if (clients.at(i).GetName() == nickname)
+			return true;
+	}
+	return false;
+}
+
+void Server::authenticate(std::string &cmd, int NewClientSocket)
+{
+    Client *client = GetClient(NewClientSocket);
+
+    cmd = cmd.substr(4); // Remove PASS
+    size_t pos = cmd.find_first_not_of("\t\v ");
+    if (pos < cmd.size())
+    {
+        cmd = cmd.substr(pos);
+        if (cmd[0] == ':')
+            cmd.erase(cmd.begin());
+    }
+    if (pos == std::string::npos || cmd.empty())
+        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+    else if (client->GetConnection() == 0)
+    {
+        string pass = cmd;
+        if (pass == PASSWORD)
+        {
+            std::cout << "Password is correct.\n";
+            // send_reponse(ERR_PASSCORRECT(string(" # ")), NewClientSocket);
+            client->SetPass(cmd);
+            client->SetConnection(1);
+            client->SetAuth(1);
+        }
+        else
+            send_reponse(ERR_INCORPASS(client->GetName()), NewClientSocket);
+    }
+    else
+        send_reponse(ERR_ALREADYREGISTERED(client->GetName()), NewClientSocket);
+
+}
+
+std::vector<std::string> Server::spliting_command(string &command)
+{
+    std::vector<std::string> command_;
+    std::string token;
+    std::istringstream tokenStream(command);
+    while (tokenStream >> token)
+    {
+        command_.push_back(token);
+        token.clear();
+    }
+    return command_;
 }
 
 bool Server::ServerCreate()
-{   
+{
+    time_t now = time(0);
+    this->Setdt(ctime(&now));
+
     // Create a new socket
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
     {
@@ -219,9 +415,19 @@ bool Server::ServerCreate()
         return EXIT_FAILURE;
     }
     int opt = 1;
-    setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt));
-    //type of socket created 
+    if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt)) == -1)
+    {
+        std::cerr << "Error: Setsockopt failed.\n";
+        return EXIT_FAILURE;
+    }
 
+    if (fcntl(server_socket, F_SETFL, O_NONBLOCK) == -1)
+    {
+        std::cerr << "Error: Fcntl failed.\n";
+        return EXIT_FAILURE;
+    }
+
+    //type of socket created 
 	server_addr.sin_family = AF_INET; 
 	server_addr.sin_addr.s_addr = INADDR_ANY; 
 	server_addr.sin_port = htons(PORT);
@@ -239,14 +445,12 @@ bool Server::ServerCreate()
         return EXIT_FAILURE;
     }
     addrlen = sizeof(server_addr);
-    //fcntl(server_socket, F_SETFL, O_NONBLOCK);
     std::cout << BLUE << "Server listening on port " << PORT << "...\n" << RESET;
-    fds[0].fd = server_socket;
-    fds[0].events = POLLIN;
-    for (int i = 1; i < MAX_CLIENTS; ++i) 
-    {
-        fds[i].fd = undefine;
-        fds[i].events = POLLIN;
-    }
+    struct pollfd newfd;
+    newfd.fd = server_socket;
+    newfd.events = POLLIN;
+    newfd.revents = 0;
+    fds.push_back(newfd);
+
     return this->ProcessClient();
 }

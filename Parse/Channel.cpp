@@ -112,7 +112,7 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     std::string output;
     std::stringstream Respond;
 
-    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << "" + ChannelName() + " :";
+    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << ChannelName() + " :";
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)
@@ -231,12 +231,12 @@ bool Channel::isProtectedTopic()
     return this->_protectedTopic;
 }
 
-int Channel::DoesClientExist(const std::string name)
+int Channel::DoesClientExist(const std::string Channel_N)
 {
-    string Channel_N(name);
+    // string Channel_N(name);
     
-    if (Channel_N.empty() || Channel_N.back() != '\0')
-        Channel_N.push_back('\0');
+    // if (Channel_N.empty() || Channel_N.back() != '\0')
+    //     Channel_N.push_back('\0');
 
     std::cout << "User name = " << Channel_N << std::endl;
     if (std::find(_admins.begin(), _admins.end(), Channel_N) != _admins.end())

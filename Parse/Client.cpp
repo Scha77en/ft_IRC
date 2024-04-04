@@ -2,7 +2,7 @@
 
 Client::Client() 
 {
-    this->online = 0;
+    this->online = false;
     this->channelID = -1;
     this->socket = 0;
     this->limited_channels = 0;
@@ -33,6 +33,21 @@ string Client::GetName(void)
 string Client::GetPass(void)
 {
     return this->_pass;
+}
+
+string Client::GetUsername(void)
+{
+    return this->_username;
+}
+
+bool Client::GetAuth(void)
+{
+    return this->Auth;
+}
+
+void Client::SetAuth(bool status)
+{
+    this->Auth = status;
 }
 
 bool Client::LimitedChannels(void)
@@ -69,6 +84,7 @@ void Client::NewClientIP(struct in_addr ClientIP)
 
 string Client::GetClientIP(void)
 {
+    std::cout << "IP ===> " << this->_ip << std::endl;
     return (this->_ip);
 }
 

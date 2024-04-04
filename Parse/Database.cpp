@@ -13,10 +13,10 @@ Database	*Database::GetInstance()
 	return DB;
 }
 
-void Database::AddClient(const std::string& name)
+void Database::AddClient(Client *client)
 {
-	Client* client = new Client();
-	clients[name] = client;
+	clients.insert(std::make_pair(client->GetName(), client));
+	std::cout << "size ==> " << clients.size() << std::endl;
 }
 
 Client* Database::GetClient(const std::string& name)
@@ -224,16 +224,32 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     CleanInput(data, ' ');
     Database *service = Database::GetInstance();
     string username = service->GetUserBySocket(UserSocket);
+	std::cout << "username : " << username << " length ==> " << username.length() << std::endl;
+	// if (username.back() != '\0') {
+	// 	username.push_back('\0');
+	// 	std::cout << "username : " << username << " length ==> " << username.length() << std::endl;
+	// }
     Client *user = service->GetClient(username);
+	std::cout << "user : " << user <<  std::endl;
+	if (!user) {
+		std::cout << "User not found" << std::endl;
+		return ;
+	}
+	std::cout << "[1]" <<  std::endl;
     if (Protection(data) || data.empty())
     {
         ERR_NEEDMOREPARAMS_461("JOIN",UserSocket, username);
         return ;
     }
+	std::cout << "[2]" <<  std::endl;
     string IP = user->GetClientIP();
+	std::cout << "ip mn client : " << IP << std::endl;
+	std::cout << "[3]" <<  std::endl;
     SYSTEM_KEYVAL ProcessChannels = parseChannels(data, UserSocket, username);
+	std::cout << "[4]" <<  std::endl;
     for (it = ProcessChannels.begin(); it != ProcessChannels.end();it++)
     {
+		std::cout << "[5]" <<  std::endl;
         string EXIST(it->first);
     
         if (EXIST.empty() || EXIST.back() != '\0')
@@ -244,16 +260,19 @@ void Database::HandelMultiChannel(string data, int UserSocket)
             ERR_TOOMANYCHANNELS_405(EXIST, UserSocket, username);
             break;
         }
+		std::cout << "[6]" <<  std::endl;
         if (user->ChannelList(EXIST))
             continue;
         Channel *channel = service->GetChannel(EXIST);
         if (channel != undefine)
         {
+			std::cout << "[7]" <<  std::endl;
             if (channel->GetSecretKey() != it->second)
             {
                 ERR_BADCHANNELKEY_475(EXIST, username, UserSocket, IP);
                 continue;
             }
+			std::cout << "[8]" <<  std::endl;
             if (channel->GetLimit() != -1)
             {
                 bool OutOfBound = channel->CountInvited() + channel->CountMembers() + channel->CountAdmins() + 1 > channel->GetLimit();
@@ -263,11 +282,13 @@ void Database::HandelMultiChannel(string data, int UserSocket)
                     continue;
                 }
             }
+			std::cout << "[9]" <<  std::endl;
             if (channel->UserIsBanned(username))
             {
                 ERR_BANNEDFROMCHAN_474(EXIST, UserSocket, username, IP);
                 continue;
             }
+			std::cout << "[10]" <<  std::endl;
             if (channel->isInviteOnly())
             {
 				int state = channel->DoesClientExist(username);
@@ -279,9 +300,11 @@ void Database::HandelMultiChannel(string data, int UserSocket)
                 ERR_INVITEONLYCHAN_473(EXIST, UserSocket, username, IP);
                 continue;
             }
+			std::cout << "OUT" << std::endl;
         }
         if (channel == undefine)
         {
+			std::cout << "first creation" << std::endl;
             channel = new Channel(EXIST, it->second);
             channel->SetSymbol("=");
             service->AddChannel(EXIST, channel);
@@ -619,8 +642,10 @@ void Database::PrintChannels()
 
 string Database::GetUserBySocket(int UserSocket)
 {
+	std::cout << "====> UserSocket : " << UserSocket << std::endl;
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
+		std::cout << "====> it->second->GetSocket() : " << it->second->GetSocket() << std::endl;
 		if (it->second->GetSocket() == UserSocket)
 			return it->first;
 	}

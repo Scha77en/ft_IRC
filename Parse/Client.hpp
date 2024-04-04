@@ -25,6 +25,7 @@ class Client
         int limited_channels;
 
         bool online;
+        bool Auth;
 
         string _ip;
         string _name;
@@ -34,6 +35,7 @@ class Client
 	
     public:
 	
+        string bufferClient;
 	    Client();
 	    ~Client();
 
@@ -51,7 +53,9 @@ class Client
         string GetChannelName(int index);
         string GetName(void);
         string GetPass(void);
+        bool GetAuth(void);
         
+        void SetAuth(bool status);
         void NewClient(int fd);
         void SetName(string name);
         void SetPass(string pass);

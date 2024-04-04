@@ -54,6 +54,8 @@
 
 class Client;
 class Channel;
+class server;
+
 const int xBUFFER_SIZE = 1024;
 
 typedef std::string string;
@@ -80,6 +82,7 @@ class Database
 
 		Client *client_;
 		Channel *channel_;
+		server *server_;
 	
 	public:
 
@@ -90,7 +93,7 @@ class Database
         
 		void	PrintChannels();
 		void 	SetServerIP(struct in_addr host);
-		void    AddClient(const std::string& name);
+		void    AddClient(Client* client);
         void    ParseUserInput(string data, int UserSocket);
         void    DisplayMessages(int UserSocket, string data);
         void    ListUsersChannels(string data, int UserSocket);
