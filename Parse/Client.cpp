@@ -1,6 +1,6 @@
 #include "Client.hpp"
 
-Client::Client() 
+Client::Client()
 {
     this->online = false;
     this->channelID = -1;

@@ -15,7 +15,9 @@ Database	*Database::GetInstance()
 
 void Database::AddClient(Client *client)
 {
+	std::cout << "Name : " << client->GetName() << std::endl;
 	clients.insert(std::make_pair(client->GetName(), client));
+
 	std::cout << "size ==> " << clients.size() << std::endl;
 }
 
@@ -496,6 +498,12 @@ void Database::ParseUserInput(string data, int UserSocket)
 
 	Database *service = Database::GetInstance();
 	string username = service->GetUserBySocket(UserSocket);
+	if (username.empty())
+	{
+		std::cout << "User not found [--------]" << std::endl;
+		return ;
+	}
+	std::cout << "username : " << username << std::endl;
 	//Client *user = service->GetClient(username);
 
 
@@ -642,12 +650,16 @@ void Database::PrintChannels()
 
 string Database::GetUserBySocket(int UserSocket)
 {
-	std::cout << "====> UserSocket : " << UserSocket << std::endl;
+	//std::cout << "====> UserSocket : " << UserSocket << std::endl;
+	std::cout << "====> clients.size() : " << clients.size() << std::endl;
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
-		std::cout << "====> it->second->GetSocket() : " << it->second->GetSocket() << std::endl;
+		std::cout << "it->first : " << it->first << std::endl;
 		if (it->second->GetSocket() == UserSocket)
+		{
+			std::cout << "OK" << std::endl;
 			return it->first;
+		}
 	}
 	return ("");
 }

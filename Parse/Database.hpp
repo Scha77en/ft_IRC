@@ -94,6 +94,7 @@ class Database
 		void	PrintChannels();
 		void 	SetServerIP(struct in_addr host);
 		void    AddClient(Client* client);
+		
         void    ParseUserInput(string data, int UserSocket);
         void    DisplayMessages(int UserSocket, string data);
         void    ListUsersChannels(string data, int UserSocket);

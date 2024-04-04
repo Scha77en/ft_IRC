@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Client.hpp"
 #include "Database.hpp"
 
 Server   *Server::instance = undefine;
@@ -90,7 +91,8 @@ bool Server::ProcessClient()
             {
                 if (fds[i].fd == server_socket)
                 {
-                    Client new_client;
+                    Client *new_client =  new Client();
+
                     struct sockaddr_in client_addr;
                     struct pollfd newfd;
                     socklen_t addrlen = sizeof(client_addr);
@@ -109,8 +111,9 @@ bool Server::ProcessClient()
                     newfd.events = POLLIN;
                     newfd.revents = 0;
 
-                    new_client.NewClient(new_client_socket);
-                    new_client.NewClientIP(client_addr.sin_addr);
+                    new_client->NewClient(new_client_socket);
+
+                    new_client->NewClientIP(client_addr.sin_addr);
                     clients.push_back(new_client);
                     fds.push_back(newfd);
                     std::cout << "New client connected " << new_client_socket << " from " << inet_ntoa(client_addr.sin_addr) << "\n";
@@ -180,7 +183,7 @@ void Server::removeClient(int fd)
 {
     for (size_t i = 0; i < clients.size(); i++)
     {
-        if (clients.at(i).GetSocket() == fd)
+        if (clients.at(i)->GetSocket() == fd)
         {
             clients.erase(clients.begin() + i);
             break;
@@ -204,8 +207,8 @@ void Server::closeFDS()
 {
     for (size_t i = 0; i < fds.size(); i++)
     {
-        std::cout << "Client ==> " << clients.at(i).GetSocket() << " disconnected.\n";
-        close(clients.at(i).GetSocket());
+        std::cout << "Client ==> " << clients.at(i)->GetSocket() << " disconnected.\n";
+        close(clients.at(i)->GetSocket());
     }
     if (server_socket != undefine)
         close(server_socket);
@@ -215,8 +218,8 @@ Client *Server::GetClient(int fd)
 {
     for (size_t i = 0; i < clients.size(); i++)
     {
-        if (clients.at(i).GetSocket() == fd)
-            return &clients.at(i);
+        if (clients.at(i)->GetSocket() == fd)
+            return clients.at(i);
     }
     return NULL;
 }
@@ -241,6 +244,7 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
     if (cmd.empty())
         return;
     std::cout << "[1] -- Command: " << cmd << std::endl;
+
     Client *client = GetClient(NewClientSocket);
     info = Database::GetInstance();
     std::vector<std::string> command;
@@ -314,6 +318,8 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
 void Server::Set_nickname(std::string &cmd, int NewClientSocket)
 {
     Client *client = GetClient(NewClientSocket);
+    info = Database::GetInstance();
+   
     if (client->GetConnection() == 0) // Check if the client is connected
     {
         send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
@@ -351,7 +357,7 @@ bool Server::checkNickName(std::string& nickname)
 {
 	for (size_t i = 0; i < this->clients.size(); i++)
 	{
-		if (clients.at(i).GetName() == nickname)
+		if (clients.at(i)->GetName() == nickname)
 			return true;
 	}
 	return false;
