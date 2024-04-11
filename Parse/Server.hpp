@@ -62,14 +62,15 @@ class Server
         int server_socket;
         int PORT;
         string PASSWORD;
-        string dt;
+        tm *dt_server;
 
         Database *info;
 
     public:
 
-        void Setdt(string dt);
-        string Getdt();
+        time_t time_to_start_server;
+        void Setdt(tm *dt);
+        tm *Getdt();
         void SetPort(int port);
         void SetPassword(string password);
         int  GetPort();
@@ -95,6 +96,8 @@ class Server
         bool ProcessClient();
         void closeFDS();
         static Server* getInstance(std::string _PORT, std::string _PASSWORD);
+        static void signalHandler(int signum);
+        void logtime(int NewClientSocket);
 };
 
 #endif

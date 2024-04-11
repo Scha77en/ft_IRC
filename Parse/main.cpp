@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Channel.hpp"
+#include <csignal>
 
 int main(int ac, char **av)
 {

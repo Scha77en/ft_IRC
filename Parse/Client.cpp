@@ -8,7 +8,9 @@ Client::Client()
     this->limited_channels = 0;
 }
 
-Client::~Client() {}
+Client::~Client()
+{
+}
 
 void Client::NewClient(int fd) 
 {
@@ -49,6 +51,42 @@ void Client::SetAuth(bool status)
 {
     this->Auth = status;
 }
+
+string Client::GetBufferClient(void)
+{
+    return this->bufferClient;
+}
+
+void Client::SetBufferClient(string buffer)
+{
+    this->bufferClient += buffer;
+}
+
+void Client::Setlogtime_client(tm *dt)
+{
+    this->logtime_client = dt;
+}
+
+tm *Client::Getlogtime_client()
+{
+    return this->logtime_client;
+}
+
+void Client::Setstart_time_client(time_t *dt)
+{
+    this->start_time_client = dt;
+}
+
+time_t *Client::Getstart_time_client()
+{
+    return this->start_time_client;
+}
+
+void Client::clearBuffer(void)
+{
+    this->bufferClient.clear();
+}
+
 
 bool Client::LimitedChannels(void)
 {
