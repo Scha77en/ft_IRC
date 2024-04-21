@@ -111,8 +111,9 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
 {
     std::string output;
     std::stringstream Respond;
-
+    std::cout << "0000000000000000000000000UsersInChannel" << std::endl;
     Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << ChannelName() + " :";
+    std::cout << "11111111111111111111111111UsersInChannel" << std::endl;
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)

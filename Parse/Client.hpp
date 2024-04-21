@@ -28,9 +28,10 @@ class Client
         bool Auth;
 
         string _ip;
-        string _name;
+        string _username;
+        string _realname;
         string _pass;
-	    string _username;
+	    string _nickname;
 	    std::vector<std::string> _channels;
 	
     public:
@@ -50,14 +51,18 @@ class Client
 
         string GetClientIP(void);
         string GetUsername(void);
+        string GetNickname(void);
+        std::string GetRealName(void);
         string GetChannelName(int index);
         string GetName(void);
         string GetPass(void);
         bool GetAuth(void);
-        
+
         void SetAuth(bool status);
         void NewClient(int fd);
         void SetName(string name);
+        void SetNickName(string name);
+        void SetRealName(string name);
         void SetPass(string pass);
         void SaveChannel(std::string name);
 	    void setUsername(std::string username);

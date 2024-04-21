@@ -1,4 +1,5 @@
 #include "Client.hpp"
+#include <string>
 
 Client::Client()
 {
@@ -6,6 +7,9 @@ Client::Client()
     this->channelID = -1;
     this->socket = 0;
     this->limited_channels = 0;
+    this->_username = "";
+    this->_realname = "";
+    this->_nickname = "";
 }
 
 Client::~Client() {}
@@ -15,9 +19,14 @@ void Client::NewClient(int fd)
 	this->socket = fd;
 }
 
+void Client::SetNickName(string name)
+{
+    this->_nickname = name;
+}
+
 void Client::SetName(string name)
 {
-    this->_name = name;
+    this->_username = name;
 }
 
 void Client::SetPass(string pass)
@@ -27,7 +36,7 @@ void Client::SetPass(string pass)
 
 string Client::GetName(void)
 {
-    return this->_name;
+    return this->_username;
 }
 
 string Client::GetPass(void)
@@ -35,9 +44,19 @@ string Client::GetPass(void)
     return this->_pass;
 }
 
+string Client::GetNickname(void)
+{
+    return this->_nickname;
+}
+
 string Client::GetUsername(void)
 {
     return this->_username;
+}
+
+std::string Client::GetRealName(void)
+{
+    return this->_realname;
 }
 
 bool Client::GetAuth(void)
@@ -96,6 +115,11 @@ int Client::GetSocket(void)
 void Client::setUsername(std::string username) 
 {
 	this->_username = username;
+}
+
+void Client::SetRealName(std::string realname) 
+{
+    this->_realname = realname;
 }
 
 void Client::SaveChannel(std::string name)

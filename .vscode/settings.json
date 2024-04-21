@@ -1,9 +1,4 @@
 {
-<<<<<<< HEAD
-	"files.associations": {
-		"iosfwd": "cpp"
-	}
-=======
     "files.associations": {
         "string": "cpp",
         "iterator": "cpp",
@@ -69,5 +64,4 @@
         "vector": "cpp",
         "__functional_03": "cpp"
     }
->>>>>>> 38b417efbdfab8d293d7da572d89c91e9abcd99a
 }

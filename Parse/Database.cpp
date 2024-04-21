@@ -53,7 +53,6 @@ void Database::NoticeUserPART(string ChannelName, string username, int UserSocke
             msg = ":" + msg.substr(0, posX);
         }
         output = ":" + username + "!~" + user->GetName() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
-
     }
     else
         output = ":" + username + "!~" + user->GetName() +  "@" + IP + " PART " + ChannelName + "\n";
@@ -101,10 +100,11 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
 
 void Database::NoticeUserHasJoined(string name, string username, int UserSocket, string IP)
 {
-	string output;
+	std::string output;
 	std::stringstream Respond;
 
-
+	// send join_SUCCESS to the user
+	std::cout << "realname = " << clients[username]->GetRealName() << std::endl;
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		if (it->second->ChannelList(name))
@@ -112,6 +112,8 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 			int socket = it->second->GetSocket();
 			if (socket > undefine)
 			{
+				output = JOIN_SUCC(username, clients[username]->GetRealName(), name, IP);
+				send(socket, output.c_str(), output.length(), 0);
 				Respond.str("");
 				Respond << ":" + username + "!~" + username.substr(0,1) +  "@" + IP + " JOIN " + name << std::endl;
 				output = Respond.str();
@@ -533,8 +535,6 @@ void Database::ParseUserInput(string data, int UserSocket)
         return service->HandelMultiPART(args, UserSocket);
 	else if (command == "KICK" || command == "kick")
         service->HandelKick(args, UserSocket);
-	else if (command == "PONG" || command == "pong")
-		return ;
 	else
 		Protection421(command, UserSocket, username);
 	PrintChannels();
@@ -638,7 +638,7 @@ void Database::DisplayMessages(string data, string name, string username, int Us
 void Database::AddChannel(const std::string& name, Channel* channel)
 {
 	channels[name] = channel;
-	//PrintChannels();
+	// PrintChannels();
 }
 
 void Database::PrintChannels() 
@@ -666,6 +666,8 @@ string Database::GetUserBySocket(int UserSocket)
 
 int Database::GetUserSocket(string name)
 {
+	if (name.empty())
+		return -1;
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		if (it->first == name)
@@ -821,7 +823,6 @@ void    Database::HandleMode(std::string data, int UserSocket)
 
 	while (ss >> remain)
 		m_args.push_back(remain);
-
 	string channelName(C_N);
 	string modes(Modes_);
     
@@ -921,6 +922,10 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 		return ;
 	}
 	else {
+		if (clients.find(target) == clients.end()) {
+			ERR_401_NOSUCHNICK(username, target, UserSocket);
+			return ;
+		}
 		state = it->second->DoesClientExist(target);
 		if (state == 0 || state == 3) {
 			RPL_341_INVITING(username, target, channelName, UserSocket);
@@ -1024,7 +1029,13 @@ void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::s
 			}
 			break;
 		case 'o':
+			if (m_args.empty() || m_args[0].empty())
+			{
+				ERR_461_NEEDMOREPARAMS(UserName, "MODE", UserSocket);
+				break;
+			}
 			TargetSocket = GetUserSocket(m_args[0]);
+			std::cout << "Tar12341231231233123123getSocket : " << TargetSocket << std::endl;
 			if (channel->SetOperator(UserName, addMode, m_args)) {
 			if (addMode)
 				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +o\n";

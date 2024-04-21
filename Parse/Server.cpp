@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "Client.hpp"
 #include "Database.hpp"
+#include <sstream>
 
 Server   *Server::instance = undefine;
 
@@ -129,9 +130,9 @@ bool Server::ProcessClient()
                         close(fds.at(i).fd);
                         std::cout << "Client disconnected " << fds.at(i).fd << "\n";
                         // removeClientFromChannel(fds.at(i).fd);
-                        removeFDS(fds.at(i).fd);
+                        // removeFDS(fds.at(i).fd); // !!this stops the server from running after a client disconnects
                         removeClient(fds.at(i).fd);
-                    } 
+                    }
                     else
                     {
                         info = Database::GetInstance();
@@ -145,11 +146,11 @@ bool Server::ProcessClient()
                         {
                                 checkPass(command.at(j), fds.at(i).fd);
                         }
-                        if (!currClient->GetName().empty() && !currClient->GetUsername().empty() && !currClient->GetPass().empty() && currClient->GetConnection() == 1 && currClient->GetAuth() == 1)
+                        if (!currClient->GetNickname().empty() && !currClient->GetUsername().empty() && !currClient->GetPass().empty() && currClient->GetConnection() == 1 && currClient->GetAuth() == 1)
                         {
                             if (currClient->GetAuth() == 1) {
                                 info->AddClient(currClient);
-                                WelcomeMsg(fds.at(i).fd, currClient->GetUsername(), currClient->GetName(), currClient->GetClientIP());
+                                WelcomeMsg(fds.at(i).fd, currClient->GetNickname(), currClient->GetName(), currClient->GetClientIP());
                             }
                             currClient->SetAuth(0);
                         }
@@ -271,6 +272,8 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
             info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "PART" || command.at(0) == "part") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "PONG" || command.at(0) == "pong") && command.size())
+            return ;
         else if ((command.at(0) == "LIST" || command.at(0) == "list") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "PRIVMSG" || command.at(0) == "privmsg") && command.size())
@@ -284,36 +287,86 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
         send_reponse(ERR_UNKNOWNCOMMAND(command.at(0)), NewClientSocket);
 }
 
-void Server::Set_username(std::string &cmd, int NewClientSocket)
-{
+void Server::Set_username(std::string &cmd, int NewClientSocket) {
+    std::stringstream ss;
+    std::string username;
+    std::string hostname;
+    std::string modestate;
+    std::string realname;
+
     Client *client = GetClient(NewClientSocket);
     if (client->GetConnection() == 0)
     {
-        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+        send_reponse(ERR_NOTREGISTERED(client->GetNickname()), NewClientSocket);
         return;
     }
     cmd = cmd.substr(4); // Remove USER
-    size_t pos = cmd.find_first_not_of("\t\v ");
-    if (pos < cmd.size())
+    ss << cmd;
+    ss >> username >> modestate >> hostname;
+    std::getline(ss, realname);
+    if (username.empty() || modestate.empty() || hostname.empty() || realname.empty())
     {
-        cmd = cmd.substr(pos);
-        if (cmd[0] == ':')
-            cmd.erase(cmd.begin());
-    }
-    if (pos == std::string::npos || cmd.empty())
-    {
-        send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
+        send_reponse(ERR_NOTENOUGHPARAM(client->GetNickname()), NewClientSocket);
         return;
     }
-    else if (client->GetUsername().empty())
+    std::cout << "[11111111] ------ [" << realname << "]" << std::endl;
+    int pos = realname.find_first_not_of("\t\v ");
+    if (realname[pos] == ':') {
+        std::cout << "============= [1]" << std::endl;
+        realname = realname.substr(realname.find_first_not_of("\t\v ") + 1);
+    }
+    else {
+        std::cout << "============= [2]" << std::endl;
+        std::stringstream sasa;
+        sasa << realname;
+        realname = "";
+        sasa >> realname;
+    }
+    std::cout << "[2222222] ------ [" << realname << "]" << std::endl;
+    std::cout << "[000000] realname = " << realname << std::endl;
+    std::cout << "Client username = " << client->GetUsername() << std::endl;
+    if (client->GetUsername().empty())
     {
-        std::cout << "Username is set to " << cmd << ".\n";
-        client->setUsername(cmd);
+        client->setUsername(username);
+        client->SetRealName(realname);
         client->SetAuth(1);
+        std::cout << "client username = " << client->GetUsername() << std::endl;
+        std::cout << "client realname = " << client->GetRealName() << std::endl;
     }
     else
-        send_reponse(ERR_ALREADYREGISTERED(client->GetName()), NewClientSocket);
+        send_reponse(ERR_ALREADYREGISTERED(client->GetNickname()), NewClientSocket);
 }
+
+// void Server::Set_username(std::string &cmd, int NewClientSocket)
+// {
+//     Client *client = GetClient(NewClientSocket);
+//     if (client->GetConnection() == 0)
+//     {
+//         send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
+//         return;
+//     }
+//     cmd = cmd.substr(4); // Remove USER
+//     size_t pos = cmd.find_first_not_of("\t\v ");
+//     if (pos < cmd.size())
+//     {
+//         cmd = cmd.substr(pos);
+//         if (cmd[0] == ':')
+//             cmd.erase(cmd.begin());
+//     }
+//     if (pos == std::string::npos || cmd.empty())
+//     {
+//         send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
+//         return;
+//     }
+//     else if (client->GetUsername().empty())
+//     {
+//         std::cout << "Username is set to " << cmd << ".\n";
+//         client->setUsername(cmd);
+//         client->SetAuth(1);
+//     }
+//     else
+//         send_reponse(ERR_ALREADYREGISTERED(client->GetName()), NewClientSocket);
+// }
 
 void Server::Set_nickname(std::string &cmd, int NewClientSocket)
 {
@@ -346,7 +399,7 @@ void Server::Set_nickname(std::string &cmd, int NewClientSocket)
             return;
         }
         std::cout << "Nickname is set to " << cmd << ".\n";
-        client->SetName(cmd);
+        client->SetNickName(cmd);
         client->SetAuth(1);
     }
     else

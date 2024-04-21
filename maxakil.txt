@@ -1,0 +1,11 @@
+delete user info when he deconect
+
+
+controle c client --done--
+
+
+-- DONE --
+Command: USER
+  Parameters: <username> 0 * <realname>
+
+  realname = aa 0 * a

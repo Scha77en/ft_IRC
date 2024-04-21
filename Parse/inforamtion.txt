@@ -34,7 +34,6 @@ When set on a socket, it means that I/O operations on that socket won't block
 the calling process even if there is no data available.
 
 
-<<<<<<< HEAD
 int socket(int domain, int type, int protocol);
 
 Specifies the communication domain in which the socket should be created.
@@ -137,7 +136,6 @@ file descriptors, waiting until one or more of the file descriptors become
 PASS 369
 NICK u0op00
 USER tyue f f g
-=======
 
 ///////// ERRORS ////////////////
 #define ERR_NEEDMODEPARM(channelname, mode) (": 696 #" + channelname + " * You must specify a parameter for the key mode. " + mode + CRLF)
@@ -155,4 +153,3 @@ USER tyue f f g
 #define ERR_ERRONEUSNICK(nickname) (": 432 " + nickname + " :Erroneus nickname" + CRLF)
 #define ERR_NOTREGISTERED(nickname) (": 451 " + nickname + " :You have not registered!" + CRLF)
 #define ERR_CMDNOTFOUND(nickname, command) (": 421 " + nickname + " " + command + " :Unknown command" + CRLF)
->>>>>>> origin/zlaarous
