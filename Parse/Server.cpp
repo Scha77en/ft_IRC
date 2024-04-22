@@ -30,14 +30,14 @@ string Server::GetPassword()
     return PASSWORD;
 }
 
-void Server::Setdt(string dt)
+void Server::Setdt(tm *dt)
 {
-    this->dt = dt;
+    dt_server = dt;
 }
 
-string Server::Getdt()
+tm *Server::Getdt()
 {
-    return this->dt;
+    return dt_server;
 }
 
 Server* Server::getInstance(std::string _PORT, std::string _PASSWORD)
@@ -63,11 +63,33 @@ void Server::send_reponse(std::string response, int fd)
 		std::cerr << "Response send() faild" << std::endl;
 }
 
+void Server::logtime(int NewClientSocket)
+{
+    //initialize logtime for each client
+    Client client = Client();
+    time_t dt = time(0);
+    client.Setstart_time_client(&dt);
+    *client.Getstart_time_client() -= time_to_start_server;
+
+    tm *dt_client = localtime(client.Getstart_time_client());
+    // write logtime line 00:00:00
+    std::string logtime = asctime(dt_client);
+    send(NewClientSocket, logtime.c_str(), logtime.length(), 0);
+
+    // time_t dt = time(0) - time_to_start_server;
+    // tm *dt_client = localtime(&dt);
+    // std::string logtime = asctime(dt_client);
+    // send(NewClientSocket, logtime.c_str(), logtime.length(), 0);
+}
+
 void Server::WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
 {
+    // long dateHour = dt_server->tm_hour;
+    // long dateMin = dt_server->tm_min;
+    // long dateSec = dt_server->tm_sec;
     string M001 = ":irc.1337.com 001 "+username+" :Welcome to the Internet Relay Network "+username+"!"+user+"@"+hostname+"\n";
     string M002 = ":irc.1337.com 002 "+username+" :Your host is "+hostname+", running version InspIRCd-3.10\n";
-    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + this->Getdt() + "\n"; 
+    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + "this->Getdt()" + "\n"; 
     string M004 = ":irc.1337.com 004 "+username+" irc.1337.com InspIRCd-3.10 iobl\n";
     string M005 = ":irc.1337.com 005 "+username+" CHANTYPES=# :are supported by this server\n";
     send(NewClientSocket, M001.c_str(), M001.length(), 0);
@@ -113,8 +135,9 @@ bool Server::ProcessClient()
                     newfd.revents = 0;
 
                     new_client->NewClient(new_client_socket);
-
                     new_client->NewClientIP(client_addr.sin_addr);
+                    time_t dt = time(0);
+                    new_client->Setstart_time_client(&dt);
                     clients.push_back(new_client);
                     fds.push_back(newfd);
                     std::cout << "New client connected " << new_client_socket << " from " << inet_ntoa(client_addr.sin_addr) << "\n";
@@ -127,7 +150,6 @@ bool Server::ProcessClient()
                     int bytes_received = recv(fds.at(i).fd, buffer, BUFFER_SIZE, 0);
                     if (bytes_received <= 0) 
                     {
-                        close(fds.at(i).fd);
                         std::cout << "Client disconnected " << fds.at(i).fd << "\n";
                         // removeClientFromChannel(fds.at(i).fd);
                         // removeFDS(fds.at(i).fd); // !!this stops the server from running after a client disconnects
@@ -137,11 +159,14 @@ bool Server::ProcessClient()
                     {
                         info = Database::GetInstance();
                         Client *currClient = GetClient(fds.at(i).fd);
-                        currClient->bufferClient = buffer;
-                        size_t pos = currClient->bufferClient.find_first_of("\r\n");
-                        if (pos == std::string::npos)
+                        // currClient->bufferClient = buffer;
+                        currClient->SetBufferClient(buffer);
+                        size_t pos = currClient->GetBufferClient().find_first_of("\r\n");
+                        if (pos == std::string::npos) {
+                            std::cout << "Buffer: " << buffer << std::endl;
                             continue;
-                        command = split_buffer(currClient->bufferClient);
+                        }
+                        command = split_buffer(currClient->GetBufferClient());
                         for (size_t j = 0; j < command.size(); j++)
                         {
                                 checkPass(command.at(j), fds.at(i).fd);
@@ -161,6 +186,13 @@ bool Server::ProcessClient()
     }
     close(server_socket);
     return EXIT_SUCCESS;
+}
+
+void Server::signalHandler(int signum)
+{
+    std::cout << "Interrupt signal (" << signum << ") received.\n";
+    instance->closeFDS();
+    exit(signum);
 }
 
 // void Server::removeClientFromChannel(int fd)
@@ -280,6 +312,8 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
         info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "QUIT" || command.at(0) == "quit") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "logtime" || command.at(0) == "LOGTIME"))
+            logtime(NewClientSocket);
         else if (command.size())
             send_reponse(ERR_UNKNOWNCOMMAND(command.at(0)), NewClientSocket);
     }
@@ -464,8 +498,9 @@ std::vector<std::string> Server::spliting_command(string &command)
 
 bool Server::ServerCreate()
 {
-    time_t now = time(0);
-    this->Setdt(ctime(&now));
+    time_to_start_server = time(0);
+    tm *dtserver = localtime(&time_to_start_server);
+    this->Setdt(dtserver);
 
     // Create a new socket
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) 

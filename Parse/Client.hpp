@@ -23,10 +23,13 @@ class Client
         int socket;
         int channelID;
         int limited_channels;
+        tm *logtime_client;
+        time_t *start_time_client;
 
         bool online;
         bool Auth;
 
+        string bufferClient;
         string _ip;
         string _username;
         string _realname;
@@ -36,7 +39,6 @@ class Client
 	
     public:
 	
-        string bufferClient;
 	    Client();
 	    ~Client();
 
@@ -49,6 +51,12 @@ class Client
         bool LimitedChannels(void);
         bool DeleteChannel(string name);
 
+        void Setlogtime_client(tm *dt);
+        tm *Getlogtime_client();
+        void Setstart_time_client(time_t *dt);
+        time_t *Getstart_time_client();
+
+        string GetBufferClient(void);
         string GetClientIP(void);
         string GetUsername(void);
         string GetNickname(void);
@@ -57,7 +65,6 @@ class Client
         string GetName(void);
         string GetPass(void);
         bool GetAuth(void);
-
         void SetAuth(bool status);
         void NewClient(int fd);
         void SetName(string name);
