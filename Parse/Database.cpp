@@ -15,8 +15,8 @@ Database	*Database::GetInstance()
 
 void Database::AddClient(Client *client)
 {
-	std::cout << "Name : " << client->GetName() << std::endl;
-	clients.insert(std::make_pair(client->GetName(), client));
+	std::cout << "Name : " << client->GetNickname() << std::endl;
+	clients.insert(std::make_pair(client->GetNickname(), client));
 
 	std::cout << "size ==> " << clients.size() << std::endl;
 }
@@ -52,10 +52,10 @@ void Database::NoticeUserPART(string ChannelName, string username, int UserSocke
             size_t posX = msg.find(" ");
             msg = ":" + msg.substr(0, posX);
         }
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
     }
     else
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " PART " + ChannelName + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + "\n";
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
         if (it->second->ChannelList(ChannelName))
@@ -76,7 +76,7 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
     Client *user = service->GetClient(username);
 
     if (msg.empty() || (msg.length() <= 2 && msg.length() > 0 && msg[0] == ':' && msg[1] == '\0'))
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " KICK " + ChannelName + " " + target + " :" + target + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " :" + target + "\n";
     else
     {
         size_t pos = msg.find(":");
@@ -85,7 +85,7 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
             size_t posX = msg.find(" ");
             msg = ":" + msg.substr(0, posX);
         }
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " KICK " + ChannelName + " " + target + " " + msg + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " " + msg + "\n";
     }
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
@@ -112,8 +112,8 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 			int socket = it->second->GetSocket();
 			if (socket > undefine)
 			{
-				output = JOIN_SUCC(username, clients[username]->GetRealName(), name, IP);
-				send(socket, output.c_str(), output.length(), 0);
+				std::string msg = JOIN_SUCC(username, clients[username]->GetUsername(), name, IP);
+				send(socket, msg.c_str(), msg.length(), 0);
 				Respond.str("");
 				Respond << ":" + username + "!~" + username.substr(0,1) +  "@" + IP + " JOIN " + name << std::endl;
 				output = Respond.str();
@@ -558,7 +558,7 @@ void Database::PRIVMessages(string data, string name, string username)
 		if (it->first == username)
 		{
 		   hostname = it->second->GetClientIP();
-		   USER = it->second->GetName();
+		   USER = it->second->GetNickname();
 		   senderSocket = it->second->GetSocket();
 		   break;
 		}
@@ -627,8 +627,8 @@ void Database::DisplayMessages(string data, string name, string username, int Us
 			int socket = it->second->GetSocket();
 			if (socket > undefine && socket != UserSocket)
 			{
-				it->second->GetName();
-				output = ":"+username+ "!~"+it->second->GetName()+"@" + it->second->GetClientIP() + " PRIVMSG #"+name+" "+data+"\n";
+				it->second->GetNickname();
+				output = ":"+username+ "!~"+it->second->GetNickname()+"@" + it->second->GetClientIP() + " PRIVMSG #"+name+" "+data+"\n";
 				send(socket, output.c_str(), output.length(), 0);
 			}
 		}

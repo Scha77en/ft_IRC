@@ -391,7 +391,7 @@ void Server::Set_nickname(std::string &cmd, int NewClientSocket)
         send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
         return;
     }
-    else if (client->GetName().empty()) // Check if the nickname is already set
+    else if (client->GetNickname().empty()) // Check if the nickname is already set
     {
         if (checkNickName(cmd))
         {
@@ -410,7 +410,7 @@ bool Server::checkNickName(std::string& nickname)
 {
 	for (size_t i = 0; i < this->clients.size(); i++)
 	{
-		if (clients.at(i)->GetName() == nickname)
+		if (clients.at(i)->GetNickname() == nickname)
 			return true;
 	}
 	return false;
@@ -442,10 +442,10 @@ void Server::authenticate(std::string &cmd, int NewClientSocket)
             client->SetAuth(1);
         }
         else
-            send_reponse(ERR_INCORPASS(client->GetName()), NewClientSocket);
+            send_reponse(ERR_INCORPASS(client->GetNickname()), NewClientSocket);
     }
     else
-        send_reponse(ERR_ALREADYREGISTERED(client->GetName()), NewClientSocket);
+        send_reponse(ERR_ALREADYREGISTERED(client->GetNickname()), NewClientSocket);
 
 }
 
