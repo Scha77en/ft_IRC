@@ -1,4 +1,5 @@
 #include "Server.hpp"
+#include "Database.hpp"
 
 Server   *Server::instance = undefine;
 
@@ -77,12 +78,13 @@ void Server::WelcomeMsg(int NewClientSocket,string username, string user, string
 bool Server::ProcessClient() 
 {
     // struct pollfd newpoll;
+    info = Database::GetInstance();
     while (true)
     {
         int num_ready = poll(&fds[0], fds.size(), -1);
         if (num_ready <= 0)
             throw std::runtime_error("poll failed");
-        for (size_t i = 0; i < fds.size(); ++i) 
+        for (size_t i = 0; i < fds.size(); ++i)
         {
             if (fds.at(i).revents & POLLIN)
             {
@@ -95,13 +97,11 @@ bool Server::ProcessClient()
                     int new_client_socket = accept(server_socket, (struct sockaddr *)&client_addr, &addrlen);
                     if (new_client_socket == -1)
                     {
-                        send_reponse(ERR_UNABLETOCONNECT(std::string ("#")), new_client_socket);
-                        std::cerr << "Error: Unable to connect to server (Connection timed out).\n";
+                        std::cerr << "Error: Accept failed.\n";
                         return EXIT_FAILURE;
                     }
                     if (fcntl(new_client_socket, F_SETFL, O_NONBLOCK) == -1) 
                     {
-                        send_reponse(ERR_UNABLETOCONNECT(std::string ("#")), new_client_socket);
                         std::cerr << "Error: Fcntl failed.\n";
                         return EXIT_FAILURE;
                     }
@@ -115,7 +115,7 @@ bool Server::ProcessClient()
                     fds.push_back(newfd);
                     std::cout << "New client connected " << new_client_socket << " from " << inet_ntoa(client_addr.sin_addr) << "\n";
                 }
-                else 
+                else
                 {
                     std::vector<std::string> command;
                     char buffer[BUFFER_SIZE];
@@ -123,8 +123,9 @@ bool Server::ProcessClient()
                     int bytes_received = recv(fds.at(i).fd, buffer, BUFFER_SIZE, 0);
                     if (bytes_received <= 0) 
                     {
-                        close(fds.at(i).fd);
                         std::cout << "Client disconnected " << fds.at(i).fd << "\n";
+                        // removeClientFromChannel(fds.at(i).fd);
+                        close(fds.at(i).fd);
                         removeClient(fds.at(i).fd);
                         removeFDS(fds.at(i).fd);
                     } 
@@ -143,8 +144,10 @@ bool Server::ProcessClient()
                         }
                         if (!currClient->GetName().empty() && !currClient->GetUsername().empty() && !currClient->GetPass().empty() && currClient->GetConnection() == 1 && currClient->GetAuth() == 1)
                         {
-                            if (currClient->GetAuth() == 1)
+                            if (currClient->GetAuth() == 1) {
+                                info->AddClient(currClient);
                                 WelcomeMsg(fds.at(i).fd, currClient->GetUsername(), currClient->GetName(), currClient->GetClientIP());
+                            }
                             currClient->SetAuth(0);
                         }
                     }
@@ -155,6 +158,23 @@ bool Server::ProcessClient()
     close(server_socket);
     return EXIT_SUCCESS;
 }
+
+// void Server::removeClientFromChannel(int fd)
+// {
+//     //remove channel
+//     info = Database::GetInstance();
+//     // delete client from all channels
+//     for (size_t i = 0; i < clients.size(); i++)
+//     {
+//         if (clients.at(i).GetSocket() == fd)
+//         {
+//             for (size_t j = 0; j < clients.at(i).GetAllChannels().size(); j++)
+//             {
+//                 info->HandelMultiPART(clients.at(i).GetAllChannels().at(j), fd);
+//             }
+//         }
+//     }
+// }
 
 void Server::removeClient(int fd)
 {
@@ -220,6 +240,7 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
 {
     if (cmd.empty())
         return;
+    std::cout << "[1] -- Command: " << cmd << std::endl;
     Client *client = GetClient(NewClientSocket);
     info = Database::GetInstance();
     std::vector<std::string> command;
@@ -233,9 +254,16 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
         Set_nickname(cmd, NewClientSocket);
     else if ((command.at(0) == "USER" || command.at(0) == "user") && command.size())
         Set_username(cmd, NewClientSocket);
-    else if (client->GetConnection() == 1 && command.size())
+    else if (client->GetConnection() == 1 && command.size() && client->GetAuth() == 0)
     {
+        std::cout << "[2] -- Command: " << cmd << std::endl;
         if ((command.at(0) == "JOIN" || command.at(0) == "join") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "TOPIC" || command.at(0) == "topic") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "MODE" || command.at(0) == "mode") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "INVITE" || command.at(0) == "invite") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "PART" || command.at(0) == "part") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
@@ -248,6 +276,8 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
         else if (command.size())
             send_reponse(ERR_UNKNOWNCOMMAND(command.at(0)), NewClientSocket);
     }
+    else if (command.size())
+        send_reponse(ERR_UNKNOWNCOMMAND(command.at(0)), NewClientSocket);
 }
 
 void Server::Set_username(std::string &cmd, int NewClientSocket)
@@ -255,7 +285,7 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
     Client *client = GetClient(NewClientSocket);
     if (client->GetConnection() == 0)
     {
-        send_reponse(ERR_NOTREGISTERED(std::string ("#")), NewClientSocket);
+        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
         return;
     }
     cmd = cmd.substr(4); // Remove USER
@@ -268,7 +298,7 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
     }
     if (pos == std::string::npos || cmd.empty())
     {
-        send_reponse(ERR_NOTENOUGHPARAM(std::string ("#")), NewClientSocket);
+        send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
         return;
     }
     else if (client->GetUsername().empty())
@@ -286,7 +316,7 @@ void Server::Set_nickname(std::string &cmd, int NewClientSocket)
     Client *client = GetClient(NewClientSocket);
     if (client->GetConnection() == 0) // Check if the client is connected
     {
-        send_reponse(ERR_NOTREGISTERED(std::string ("#")), NewClientSocket);
+        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
         return;
     }
     cmd = cmd.substr(4); // Remove NICK
@@ -299,7 +329,7 @@ void Server::Set_nickname(std::string &cmd, int NewClientSocket)
     }
     if (pos == std::string::npos || cmd.empty()) // Check if the nickname is empty
     {
-        send_reponse(ERR_NOTENOUGHPARAM(std::string ("#")), NewClientSocket);
+        send_reponse(ERR_NOTENOUGHPARAM(std::string ("guess")), NewClientSocket);
         return;
     }
     else if (client->GetName().empty()) // Check if the nickname is already set
@@ -340,13 +370,14 @@ void Server::authenticate(std::string &cmd, int NewClientSocket)
             cmd.erase(cmd.begin());
     }
     if (pos == std::string::npos || cmd.empty())
-        send_reponse(ERR_NOTREGISTERED(std::string ("#")), NewClientSocket);
+        send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
     else if (client->GetConnection() == 0)
     {
         string pass = cmd;
         if (pass == PASSWORD)
         {
             std::cout << "Password is correct.\n";
+            // send_reponse(ERR_PASSCORRECT(string(" # ")), NewClientSocket);
             client->SetPass(cmd);
             client->SetConnection(1);
             client->SetAuth(1);

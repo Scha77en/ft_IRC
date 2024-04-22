@@ -2,7 +2,7 @@ NAME = ircserv
 
 CPP = c++
 
-CPPFLAGS = -Wall -Wextra -Werror -std=c++98
+CPPFLAGS = -Wall -Wextra -Werror -std=c++98 -g -fsanitize=address
 
 HEADER_P = Parse/Server.hpp Parse/Channel.hpp Parse/Database.hpp Parse/Client.hpp
 

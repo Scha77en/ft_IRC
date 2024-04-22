@@ -84,6 +84,7 @@ void Client::NewClientIP(struct in_addr ClientIP)
 
 string Client::GetClientIP(void)
 {
+    std::cout << "IP ===> " << this->_ip << std::endl;
     return (this->_ip);
 }
 

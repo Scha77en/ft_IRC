@@ -24,6 +24,7 @@
 
 //error reply
 #define ERR_INCORPASS(nickname) (": 464 " + nickname + " :Password incorrect !" + "\r\n" )
+// #define RPL_PASSCORRECT(nickname) (": 464 " + nickname + " :Password correct !" + "\r\n" )
 #define ERR_ALREADYREGISTERED(nickname) (": 462 " + nickname + " :You may not reregister !" + "\r\n" )
 #define ERR_NONICKNAME(nickname) (": 431 " + nickname + " :No nickname given" + "\r\n" )
 #define ERR_NICKINUSE(nickname) (": 433 " + nickname + " :Nickname is already in use" + "\r\n")
@@ -32,7 +33,7 @@
 #define ERR_CMDNOTFOUND(nickname, command) (": 421 " + nickname + " " + command + " :Unknown command" + "\r\n")
 #define ERR_NOTENOUGHPARAM(nickname) (": 461 " + nickname + " :Not enough parameters." + "\r\n")
 #define ERR_UNKNOWNCOMMAND(nickname) (": 421 " + nickname + " :Unknown command" + "\r\n")
-#define ERR_UNABLETOCONNECT(nickname) (": 464 " + nickname + " :Unable to connect to server (Connection timed out)" + "\r\n")
+
 
 // #define MAX_CLIENTS 30
 
@@ -83,6 +84,7 @@ class Server
         void WelcomeMsg(int NewClientSocket, string username, string user,string hostname);
         void removeClient(int fd);
         void removeFDS(int fd);
+        // void removeClientFromChannel(int fd);
         bool checkNickName(std::string &command);
         void send_reponse(std::string response, int fd);
         void authenticate(std::string &cmd, int NewClientSocket);
