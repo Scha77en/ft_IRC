@@ -1,11 +1,20 @@
 #include "Server.hpp"
 #include "Channel.hpp"
 
-int main(void)
+int main(int ac, char **av)
 {
-    Server *Service = Server::getInstance();
-
-    Service->ServerCreate();
-    
-    return EXIT_SUCCESS;
+    if (ac != 3)
+    {
+        std::cerr << "Usage: ./parse [PORT] [PASSWORD]" << std::endl;
+        return 1;
+    }
+    try
+    {
+        Server *server = Server::getInstance(av[1], av[2]);
+        server->ServerCreate();
+    }
+    catch (std::exception &e)
+    {
+        std::cerr << e.what() << std::endl;
+    }
 }

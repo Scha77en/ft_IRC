@@ -13,10 +13,10 @@ Database	*Database::GetInstance()
 	return DB;
 }
 
-void Database::AddClient(const std::string& name)
+void Database::AddClient(Client *client)
 {
-	Client* client = new Client();
-	clients[name] = client;
+	clients.insert(std::make_pair(client->GetNickname(), client));
+	std::cout << "size ==> " << clients.size() << std::endl;
 }
 
 Client* Database::GetClient(const std::string& name)
@@ -50,11 +50,11 @@ void Database::NoticeUserPART(string ChannelName, string username, int UserSocke
             size_t posX = msg.find(" ");
             msg = ":" + msg.substr(0, posX);
         }
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
 
     }
     else
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " PART " + ChannelName + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + "\n";
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
         if (it->second->ChannelList(ChannelName))
@@ -75,7 +75,7 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
     Client *user = service->GetClient(username);
 
     if (msg.empty() || (msg.length() <= 2 && msg.length() > 0 && msg[0] == ':' && msg[1] == '\0'))
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " KICK " + ChannelName + " " + target + " :" + target + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " :" + target + "\n";
     else
     {
         size_t pos = msg.find(":");
@@ -84,7 +84,7 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
             size_t posX = msg.find(" ");
             msg = ":" + msg.substr(0, posX);
         }
-        output = ":" + username + "!~" + user->GetName() +  "@" + IP + " KICK " + ChannelName + " " + target + " " + msg + "\n";
+        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " " + msg + "\n";
     }
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
@@ -224,16 +224,32 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     CleanInput(data, ' ');
     Database *service = Database::GetInstance();
     string username = service->GetUserBySocket(UserSocket);
+	std::cout << "username : " << username << " length ==> " << username.length() << std::endl;
+	// if (username.back() != '\0') {
+	// 	username.push_back('\0');
+	// 	std::cout << "username : " << username << " length ==> " << username.length() << std::endl;
+	// }
     Client *user = service->GetClient(username);
+	std::cout << "user : " << user <<  std::endl;
+	if (!user) {
+		std::cout << "User not found" << std::endl;
+		return ;
+	}
+	std::cout << "[1]" <<  std::endl;
     if (Protection(data) || data.empty())
     {
         ERR_NEEDMOREPARAMS_461("JOIN",UserSocket, username);
         return ;
     }
+	std::cout << "[2]" <<  std::endl;
     string IP = user->GetClientIP();
+	std::cout << "ip mn client : " << IP << std::endl;
+	std::cout << "[3]" <<  std::endl;
     SYSTEM_KEYVAL ProcessChannels = parseChannels(data, UserSocket, username);
+	std::cout << "[4]" <<  std::endl;
     for (it = ProcessChannels.begin(); it != ProcessChannels.end();it++)
     {
+		std::cout << "[5]" <<  std::endl;
         string EXIST(it->first);
     
         if (EXIST.empty() || EXIST.back() != '\0')
@@ -244,16 +260,19 @@ void Database::HandelMultiChannel(string data, int UserSocket)
             ERR_TOOMANYCHANNELS_405(EXIST, UserSocket, username);
             break;
         }
+		std::cout << "[6]" <<  std::endl;
         if (user->ChannelList(EXIST))
             continue;
         Channel *channel = service->GetChannel(EXIST);
         if (channel != undefine)
         {
+			std::cout << "[7]" <<  std::endl;
             if (channel->GetSecretKey() != it->second)
             {
                 ERR_BADCHANNELKEY_475(EXIST, username, UserSocket, IP);
                 continue;
             }
+			std::cout << "[8]" <<  std::endl;
             if (channel->GetLimit() != -1)
             {
                 bool OutOfBound = channel->CountInvited() + channel->CountMembers() + channel->CountAdmins() + 1 > channel->GetLimit();
@@ -263,11 +282,13 @@ void Database::HandelMultiChannel(string data, int UserSocket)
                     continue;
                 }
             }
+			std::cout << "[9]" <<  std::endl;
             if (channel->UserIsBanned(username))
             {
                 ERR_BANNEDFROMCHAN_474(EXIST, UserSocket, username, IP);
                 continue;
             }
+			std::cout << "[10]" <<  std::endl;
             if (channel->isInviteOnly())
             {
 				int state = channel->DoesClientExist(username);
@@ -279,9 +300,11 @@ void Database::HandelMultiChannel(string data, int UserSocket)
                 ERR_INVITEONLYCHAN_473(EXIST, UserSocket, username, IP);
                 continue;
             }
+			std::cout << "OUT" << std::endl;
         }
         if (channel == undefine)
         {
+			std::cout << "first creation" << std::endl;
             channel = new Channel(EXIST, it->second);
             channel->SetSymbol("=");
             service->AddChannel(EXIST, channel);
@@ -502,8 +525,6 @@ void Database::ParseUserInput(string data, int UserSocket)
         return service->HandelMultiPART(args, UserSocket);
 	else if (command == "KICK" || command == "kick")
         service->HandelKick(args, UserSocket);
-	else if (command == "PONG" || command == "pong")
-		return ;
 	else
 		Protection421(command, UserSocket, username);
 	PrintChannels();
@@ -517,91 +538,127 @@ void ERR_NOSUCHNICK(string username, string target, int UserSocket)
 
 void Database::PRIVMessages(string data, string name, string username)
 {
-	int senderSocket = undefine;
-	int socketFailed = GetUserSocket(name);
+    int senderSocket = undefine;
+    int socketFailed = GetUserSocket(name);
 
-	string USER = "";
-	string hostname = "";
-	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
-	{
-		if (it->first == username)
-		{
-		   hostname = it->second->GetClientIP();
-		   USER = it->second->GetName();
-		   senderSocket = it->second->GetSocket();
-		   break;
-		}
-	}
-	if (socketFailed == undefine)
-	{
-		ERR_NOSUCHNICK(username, name, senderSocket);
-		return ;
-	}
-	string output = ":"+ username + "!~" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
-	send(socketFailed, output.c_str(), output.length(), 0);
+	std::cout << "***************> name : " << name << std::endl;
+	std::cout << "***************> Socket number : " << socketFailed << std::endl;
+    string USER = "";
+    string hostname = "";
+
+    if (username.empty() || username.back() != '\0')
+        username.push_back('\0');
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+		std::cout << "=====> it->first : " << it->first << std::endl;
+		std::cout << "=====> it->second->GetNickname() : " << it->second->GetNickname() << std::endl;
+        string CHECK(it->first);
+        if (CHECK.empty() || CHECK.back() != '\0')
+            CHECK.push_back('\0');
+		std::cout << "______________________CHECK == [" << CHECK << "]" << std::endl;
+		std::cout << "______________________username == [" << username << "]" << std::endl;
+        if (CHECK == username)
+        {
+           hostname = it->second->GetClientIP();
+           USER = it->second->GetNickname();
+           senderSocket = it->second->GetSocket();
+           break;
+        }
+    }
+    if (socketFailed == undefine)
+    {
+        ERR_NOSUCHNICK_401(username, name, senderSocket);
+        return ;
+    }
+    size_t pos = data.find(":");
+    if (pos == std::string::npos)
+    {
+        size_t posX = data.find(" ");
+        data = ":" + data.substr(0, posX);
+    }
+    string output = ":"+ username + "!~" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
+    send(socketFailed, output.c_str(), output.length(), 0);
 }
 
 
 void Database::StartCommunication(int UserSocket, string data)
 {
-	string msg;
-	STORE List;
-	Database *service = Database::GetInstance();
-	string username = service->GetUserBySocket(UserSocket);
+    string msg;
+    STORE List;
 
-	if (data.empty() || Protection(data))
-	{
-		ERR_NORECIPIENT_411(username, UserSocket);
-		return;
-	}
+	std::cout << "===> UserSocket : " << UserSocket << std::endl;
+    Database *service = Database::GetInstance();
+    string username = service->GetUserBySocket(UserSocket);
+    CleanInput(data, ' ');
 
-	List = GetSendingList(data, msg);
-	if (msg.empty() || Protection(msg))
-	{
-		ERR_NOTEXTTOSEND_412(username, UserSocket);
-		return ;
-	}
-	for(size_t i = 0; i < List.size(); i++)
-	{
-		if (List[i][0] == '#')
-			service->DisplayMessages(msg, List[i].substr(1), username, UserSocket);
-		else
-			service->PRIVMessages(msg, List[i], username);
-	}
+    if (data.empty() || Protection(data))
+    {
+        ERR_NORECIPIENT_411(username, UserSocket);
+        return;
+    }
+
+    List = GetSendingList(data, msg);
+    if (msg.empty() || Protection(msg))
+    {
+        ERR_NOTEXTTOSEND_412(username, UserSocket);
+        return ;
+    }
+    for(size_t i = 0; i < List.size(); i++)
+    {
+        if (List[i].empty() || List[i].back() != '\0')
+            List[i].push_back('\0');
+        if (List[i][0] == '#')
+            service->DisplayMessages(msg, List[i], username, UserSocket);
+        else
+            service->PRIVMessages(msg, List[i], username);
+    }
 }
 
 void Database::DisplayMessages(string data, string name, string username, int UserSocket)
 {
-	string output;
-	bool is_out = undefine;
-	std::stringstream Respond;
-	int socketFailed = undefine;
+    string output;
+    bool is_out = undefine;
+    std::stringstream Respond;
+    int socketFailed = undefine;
 
-	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
-	{
-		if (it->second->ChannelList(name) && it->first == username)
-			is_out = 1;
-		if (it->first == username)
-			socketFailed = it->second->GetSocket();
-	}
-	if (is_out == undefine)
-	{
-		ERR_NOSUCHCHANNEL_403(username, name, UserSocket);
-		return ;
-	}
-	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end() && is_out; ++it)
-	{
-		if (it->second->ChannelList(name))
-		{
-			int socket = it->second->GetSocket();
-			if (socket > undefine && socket != UserSocket)
-			{
-				it->second->GetName();
-				output = ":"+username+ "!~"+it->second->GetName()+"@" + it->second->GetClientIP() + " PRIVMSG #"+name+" "+data+"\n";
-				send(socket, output.c_str(), output.length(), 0);
-			}
-		}
-	}
+    if (name.empty() || name.back() != '\0')
+        name.push_back('\0');
+    if (username.empty() || username.back() != '\0')
+        username.push_back('\0');
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    {
+        string CHECK(it->first);
+        if (CHECK.empty() || CHECK.back() != '\0')
+            CHECK.push_back('\0');
+        if (it->second->ChannelList(name) && CHECK == username)
+            is_out = 1;
+        if (CHECK == username)
+            socketFailed = it->second->GetSocket();
+    }
+    if (is_out == undefine)
+    {
+        ERR_NOSUCHCHANNEL_403(username, name, UserSocket);
+        return ;
+    }
+    size_t pos = data.find(":");
+    if (pos == std::string::npos)
+    {
+        size_t posX = data.find(" ");
+        data = ":" + data.substr(0, posX);
+    }
+    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end() && is_out; ++it)
+    {
+        if (it->second->ChannelList(name))
+        {
+            int socket = it->second->GetSocket();
+            if (socket > undefine && socket != UserSocket)
+            {
+                it->second->GetNickname();
+                output = ":"+username+ "!~"+it->second->GetNickname()+"@" + it->second->GetClientIP() + " PRIVMSG "+name+" "+data+"\n";
+                send(socket, output.c_str(), output.length(), 0);
+            }
+        }
+    }
 }
 
 void Database::AddChannel(const std::string& name, Channel* channel)
@@ -619,8 +676,10 @@ void Database::PrintChannels()
 
 string Database::GetUserBySocket(int UserSocket)
 {
+	std::cout << "====> UserSocket : " << UserSocket << std::endl;
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
+		std::cout << "====> it->second->GetSocket() : " << it->second->GetSocket() << std::endl;
 		if (it->second->GetSocket() == UserSocket)
 			return it->first;
 	}
@@ -629,8 +688,11 @@ string Database::GetUserBySocket(int UserSocket)
 
 int Database::GetUserSocket(string name)
 {
+	name.pop_back();
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
+		std::cout << "/////////////////====> it->first : [" << it->first << "]" << "length == " << it->first.length() << std::endl;
+		std::cout << "/////////////////====> name : [" << name << "]" << "length == " << name.length() << std::endl;
 		if (it->first == name)
 			return it->second->GetSocket();
 	}
