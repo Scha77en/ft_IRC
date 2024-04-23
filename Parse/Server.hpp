@@ -54,7 +54,7 @@ class Server
         // struct pollfd fds[MAX_CLIENTS];
         std::vector<struct pollfd> fds;
         std::vector<struct in_addr> client_ips;
-        std::vector<Client> clients;
+        std::vector<Client *> clients;
 
         // struct in_addr client_ips[30];
 

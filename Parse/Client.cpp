@@ -15,9 +15,19 @@ void Client::NewClient(int fd)
 	this->socket = fd;
 }
 
-void Client::SetName(string name)
+void Client::SetNickName(string name)
 {
-    this->_name = name;
+    this->_nickname = name;
+}
+
+void Client::SetRealName(std::string realname)
+{
+    this->_realname = realname;
+}
+
+void Client::SetUserName(string name)
+{
+    this->_username = name;
 }
 
 void Client::SetPass(string pass)
@@ -25,19 +35,24 @@ void Client::SetPass(string pass)
     this->_pass = pass;
 }
 
-string Client::GetName(void)
+string Client::GetUsername(void)
 {
-    return this->_name;
+    return this->_username;
+}
+
+string Client::GetNickname(void)
+{
+    return this->_nickname;
+}
+
+std::string Client::GetRealName(void)
+{
+    return this->_realname;
 }
 
 string Client::GetPass(void)
 {
     return this->_pass;
-}
-
-string Client::GetUsername(void)
-{
-    return this->_username;
 }
 
 bool Client::GetAuth(void)

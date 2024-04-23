@@ -1,6 +1,4 @@
-<<<<<<< HEAD
 join # -- must not create the channel;
-=======
 int socket(int domain, int type, int protocol);
 
 Specifies the communication domain in which the socket should be created.
@@ -103,4 +101,3 @@ file descriptors, waiting until one or more of the file descriptors become
 PASS 369
 NICK u0op00
 USER tyue f f g
->>>>>>> origin/zlaarous
