@@ -1,5 +1,6 @@
 #include "Server.hpp"
 #include "Database.hpp"
+#include <iostream>
 
 Server   *Server::instance = undefine;
 
@@ -128,16 +129,18 @@ bool Server::ProcessClient()
                         close(fds.at(i).fd);
                         removeClient(fds.at(i).fd);
                         removeFDS(fds.at(i).fd);
-                    } 
+                    }
                     else
                     {
+                        std::cout << "Received: " << buffer << std::endl;
                         info = Database::GetInstance();
                         Client *currClient = GetClient(fds.at(i).fd);
                         currClient->bufferClient = buffer;
-                        size_t pos = currClient->bufferClient.find_first_of("\r\n");
-                        if (pos == std::string::npos)
-                            continue;
+                        // size_t pos = currClient->bufferClient.find_first_of("\r\n");
+                        // if (pos == std::string::npos)
+                        //     continue;
                         command = split_buffer(currClient->bufferClient);
+                                std::cout << "Command: " << command[0] << std::endl;
                         for (size_t j = 0; j < command.size(); j++)
                         {
                                 checkPass(command.at(j), fds.at(i).fd);

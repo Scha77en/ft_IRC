@@ -538,6 +538,8 @@ void ERR_NOSUCHNICK(string username, string target, int UserSocket)
 
 void Database::PRIVMessages(string data, string name, string username)
 {
+	name.pop_back();
+	std::cout << "***************> name : [" << name << "]" << std::endl;
     int senderSocket = undefine;
     int socketFailed = GetUserSocket(name);
 
@@ -589,6 +591,7 @@ void Database::StartCommunication(int UserSocket, string data)
 	std::cout << "===> UserSocket : " << UserSocket << std::endl;
     Database *service = Database::GetInstance();
     string username = service->GetUserBySocket(UserSocket);
+	// username.pop_back();
     CleanInput(data, ' ');
 
     if (data.empty() || Protection(data))
@@ -688,7 +691,6 @@ string Database::GetUserBySocket(int UserSocket)
 
 int Database::GetUserSocket(string name)
 {
-	name.pop_back();
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		std::cout << "/////////////////====> it->first : [" << it->first << "]" << "length == " << it->first.length() << std::endl;
@@ -951,6 +953,7 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 			RPL_341_INVITING(username, target, channelName, UserSocket);
 			std::string notice = ":" + username + " INVITE " + target + " " + channelName + "\n";
 			send(GetUserSocket(target), notice.c_str(), notice.length(), 0);
+			std::cout << "The target has been noticed" << std::endl;
 			return ;
 		}
 		else {
@@ -963,6 +966,7 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 std::string Database::ExtractChannelName(std::string input) {
 	size_t pos;
 
+	std::cout << "Input is : [" << input << "]" << std::endl;
 	if (input.empty() || input[0] != '#') {
 		return "";
 	}
@@ -978,6 +982,7 @@ std::string Database::ExtractChannelName(std::string input) {
 		std::cout << "--- FALSE ---" << std::endl;
 		return "";
 	}
+	std::cout << "Channel Extracted is : [" << Channel << "]" << std::endl;
 	return Channel;
 }
 
@@ -1017,34 +1022,34 @@ void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::s
 		case 'i':
 			channel->setInviteOnly(addMode);
 			if (addMode)
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +i\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " +i\n";
 			else
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -i\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " -i\n";
 			channel->BroadCastMessage(broadcast);
 			break;
 		case 't':
 			channel->setProtectedTopic(addMode);
 			if (addMode)
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +t\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " +t\n";
 			else
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -t\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " -t\n";
 			channel->BroadCastMessage(broadcast);
 			break;
 		case 'l':
 			if (channel->setUserLimit(m_args, UserName, addMode)) {
 				if (addMode)
-					broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +l\n";
+					broadcast = "324 " + UserName + " " + channel->ChannelName() + " +l\n";
 				else
-					broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -l\n";
+					broadcast = "324 " + UserName + " " + channel->ChannelName() + " -l\n";
 				channel->BroadCastMessage(broadcast);
 			}
 			break;
 		case 'k':
 			if (channel->setKey(m_args, addMode, UserName)) {
 			if (addMode)
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +k\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " +k\n";
 			else
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -k\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " -k\n";
 			channel->BroadCastMessage(broadcast);
 			}
 			break;
@@ -1052,9 +1057,9 @@ void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::s
 			TargetSocket = GetUserSocket(m_args[0]);
 			if (channel->SetOperator(UserName, addMode, m_args)) {
 			if (addMode)
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " +o\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " +o\n";
 			else
-				broadcast = "324 " + UserName + " #" + channel->ChannelName() + " -o\n";
+				broadcast = "324 " + UserName + " " + channel->ChannelName() + " -o\n";
 			send(TargetSocket, broadcast.c_str(), broadcast.length(), 0);
 			}
 			break;
@@ -1128,6 +1133,8 @@ void    Database::RPL_TOPIC_332(std::string username, std::string channelName, s
 
 void	Database::RPL_324_CHANNELMODEIS(std::string username, std::string channelName, int UserSocket)
 {
+	std::cout << YELLOW "RPL_324_CHANNELMODEIS" << std::endl;
+	std::cout << "channelName : [" << channelName << "]" RESET << std::endl;
 	std::string modes = channels[channelName]->GetModes();
 	std::string error = RPL_CHANNELMODEIS(username, channelName, modes);
 	send(UserSocket, error.c_str(), error.length(), 0);

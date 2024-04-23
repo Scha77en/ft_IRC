@@ -2,25 +2,25 @@
 
 void ERR_BADCHANNELKEY_475(string name, string username, int UserSocket, string IP)
 {
-    string output = ":irc.1337.com" + IP + " 475 " + username + " #" + name + " :Cannot join channel (+k) - bad key\n";
+    string output = ":irc.1337.com" + IP + " 475 " + username + " " + name + " :Cannot join channel (+k) - bad key\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
 void ERR_CHANNELISFULL_471(string name, int UserSocket, string username, string IP)
 {
-    string output = ":irc.1337.com" + IP + " 471 " + username + " #" + name + " :Cannot join channel (+l)\n";
+    string output = ":irc.1337.com" + IP + " 471 " + username + " " + name + " :Cannot join channel (+l)\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
 void ERR_BANNEDFROMCHAN_474(string name, int UserSocket, string username, string IP)
 {
-    string output = ":irc.1337.com" + IP + " 474 " + username + " #" + name + " :Cannot join channel (+b)\n";
+    string output = ":irc.1337.com" + IP + " 474 " + username + " " + name + " :Cannot join channel (+b)\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
 void ERR_INVITEONLYCHAN_473(string name, int UserSocket, string username, string IP)
 {
-    string output = ":irc.1337.com" + IP + " 473 " + username + " #" + name + " :Cannot join channel (+i)\n";
+    string output = ":irc.1337.com" + IP + " 473 " + username + " " + name + " :Cannot join channel (+i)\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -32,7 +32,7 @@ void ERR_UNKNOWNCOMMAND_421(string command, int UserSocket, string username)
 
 void ERR_TOOMANYCHANNELS_405(string name, int UserSocket, string username)
 {
-    string output = ":irc.1337.com 405 " + username + " #" + name + " :You have joined too many channels\n";
+    string output = ":irc.1337.com 405 " + username + " " + name + " :You have joined too many channels\n";
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
