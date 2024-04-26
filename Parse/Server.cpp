@@ -275,6 +275,8 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
             info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "PRIVMSG" || command.at(0) == "privmsg") && command.size())
         info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "KICK" || command.at(0) == "kick") && command.size())
+        info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "QUIT" || command.at(0) == "quit") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "PONG" || command.at(0) == "pong") && command.size())

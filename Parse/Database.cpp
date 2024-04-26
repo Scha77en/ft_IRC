@@ -263,11 +263,15 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     for (it = ProcessChannels.begin(); it != ProcessChannels.end();it++)
     {
 		std::cout << "[5]" <<  std::endl;
-        string EXIST(it->first);
+        std::string EXIST(it->first);
+		std::cout << "EXIST ==> " << EXIST << " length ==> " << EXIST.length() << std::endl;
+		// EXIST = ExtractChannelName(EXIST);
+		// std::cout << "EXIST ==> " << EXIST << " length ==> " << EXIST.length() << std::endl;
     
-        if (EXIST.empty() || EXIST.back() != '\0')
-            EXIST.push_back('\0');
+        // if (EXIST.empty() || EXIST.back() != '\0')
+        //     EXIST.push_back('\0');
         
+		// std::cout << "EXIST ==> " << EXIST << " length ==> " << EXIST.length() << std::endl;
         if (user->LimitedChannels())
         {
             ERR_TOOMANYCHANNELS_405(EXIST, UserSocket, username);
@@ -370,16 +374,16 @@ void Database::HandelMultiPART(string data, int UserSocket)
     {
         string EXIST(it->first);
 
-        if (EXIST.empty() || EXIST.back() != '\0')
-            EXIST.push_back('\0');
+        // if (EXIST.empty() || EXIST.back() != '\0')
+        //     EXIST.push_back('\0');
 
 		SYSTEM_CHANNEL::iterator xit;
         for (xit = service->channels.begin(); xit != service->channels.end() && !is_inChannel; ++xit)
         {
             string Detected(xit->first);
 
-            if (Detected.empty() || Detected.back() != '\0')
-                Detected.push_back('\0');
+            // if (Detected.empty() || Detected.back() != '\0')
+            //     Detected.push_back('\0');
             if (Detected == EXIST)
             {
                 is_inChannel = 1;
@@ -432,10 +436,10 @@ void Database::HandelKick(string data, int UserSocket)
     string ChannelName(part1);
     string TrgetUsername(part2);
 
-    if (ChannelName.empty() || ChannelName.back() != '\0')
-        ChannelName.push_back('\0');
-    if (TrgetUsername.empty() || TrgetUsername.back() != '\0')
-        TrgetUsername.push_back('\0');
+    // if (ChannelName.empty() || ChannelName.back() != '\0')
+    //     ChannelName.push_back('\0');
+    // if (TrgetUsername.empty() || TrgetUsername.back() != '\0')
+    //     TrgetUsername.push_back('\0');
 
     bool not_found = undefine;
     string IP = user->GetClientIP();
@@ -444,8 +448,8 @@ void Database::HandelKick(string data, int UserSocket)
     {
         string Detected(xit->first);
 
-        if (Detected.empty() || Detected.back() != '\0')
-            Detected.push_back('\0');
+        // if (Detected.empty() || Detected.back() != '\0')
+        //     Detected.push_back('\0');
         if (Detected == ChannelName)
         {
             not_found = 1;
@@ -530,6 +534,8 @@ void Database::ParseUserInput(string data, int UserSocket)
     cmd >> command;
     std::getline(cmd, args);
 	
+	std::cout << "command : " << command << " length ==> " << command.length() << std::endl;
+
 	if (command == "JOIN" || command == "join")
 		HandelMultiChannel(args, UserSocket);
 	else if (command == "PRIVMSG" || command == "privmsg")
@@ -559,8 +565,8 @@ void Database::PRIVMessages(string data, string name, string username)
     string USER = "";
     string hostname = "";
 
-    if (username.empty() || username.back() != '\0')
-        username.push_back('\0');
+    // if (username.empty() || username.back() != '\0')
+    //     username.push_back('\0');
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
 		std::cout << "=====> it->first : " << it->first << std::endl;
@@ -622,6 +628,7 @@ void Database::StartCommunication(int UserSocket, string data)
     }
 
     List = GetSendingList(data, msg);
+	// List[1] = List[1].substr(0, list[1].size() - 1);
     if (msg.empty() || Protection(msg))
     {
         ERR_NOTEXTTOSEND_412(username, UserSocket);
@@ -629,8 +636,8 @@ void Database::StartCommunication(int UserSocket, string data)
     }
     for(size_t i = 0; i < List.size(); i++)
     {
-        if (List[i].empty() || List[i].back() != '\0')
-            List[i].push_back('\0');
+        // if (List[i].empty() || List[i].back() != '\0')
+        //     List[i].push_back('\0');
         if (List[i][0] == '#')
             service->DisplayMessages(msg, List[i], username, UserSocket);
         else
@@ -645,8 +652,12 @@ void Database::DisplayMessages(string data, string name, string username, int Us
     std::stringstream Respond;
     int socketFailed = undefine;
 
-    if (name.empty() || name.back() != '\0')
-        name.push_back('\0');
+    // if (name.empty() || name.back() != '\0')
+	// {
+	// 	std::cout << YELLOW "RA D5EL WLD L9A7BA" RESET << std::endl;
+    //     name.push_back('\0');
+	// }
+	// name = ExtractChannelName(name);
     if (username.empty() || username.back() != '\0')
         username.push_back('\0');
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
@@ -661,6 +672,7 @@ void Database::DisplayMessages(string data, string name, string username, int Us
     }
     if (is_out == undefine)
     {
+		std::cout << YELLOW "RA D5EL WLD L9A7BA [22]" RESET << std::endl;
         ERR_NOSUCHCHANNEL_403(username, name, UserSocket);
         return ;
     }
@@ -714,12 +726,11 @@ string Database::GetUserBySocket(int UserSocket)
 
 int Database::GetUserSocket(string name)
 {
-	std::string username = name.substr(0, name.size() - 1);
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		std::cout << "/////////////////====> it->first : [" << it->first << "]" << "length == " << it->first.length() << std::endl;
-		std::cout << "/////////////////====> name : [" << username << "]" << "length == " << username.length() << std::endl;
-		if (it->first == username)
+		std::cout << "/////////////////====> name : [" << name << "]" << "length == " << name.length() << std::endl;
+		if (it->first == name)
 			return it->second->GetSocket();
 	}
 	return (undefine);
@@ -752,8 +763,8 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 
 	string Channel_N(C_N);
     
-    if (Channel_N.empty() || Channel_N.back() != '\0')
-        Channel_N.push_back('\0');
+    // if (Channel_N.empty() || Channel_N.back() != '\0')
+    //     Channel_N.push_back('\0');
 
 	std::cout << "command : " << command << std::endl;
 	std::cout << "C_N : " << C_N << std::endl;
@@ -883,8 +894,8 @@ void    Database::HandleMode(std::string data, int UserSocket)
 		modes = "";
 	}
 
-    if (channelName.empty() || channelName.back() != '\0')
-        channelName.push_back('\0');
+    // if (channelName.empty() || channelName.back() != '\0')
+    //     channelName.push_back('\0');
 
 	if (channelName[0] == '\0') {
 		ERR_461_NEEDMOREPARAMS(UserName, command, UserSocket);
@@ -942,8 +953,8 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 
 	std::cout << "[1] channelName : " << channelName << " length" << channelName.length() << std::endl;
 	
-	if (channelName.empty() || channelName.back() != '\0')
-		channelName.push_back('\0');
+	// if (channelName.empty() || channelName.back() != '\0')
+	// 	channelName.push_back('\0');
 
 	if (channelName[0] == '\0') {
 		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
@@ -1004,7 +1015,7 @@ std::string Database::ExtractChannelName(std::string input) {
 		std::cout << "--- FALSE ---" << std::endl;
 		return "";
 	}
-	std::cout << "Channel Extracted is : [" << Channel << "]" << std::endl;
+	std::cout << "Channel Extracted is : [" << Channel << "] length ==>" << Channel.length() << std::endl;
 	return Channel;
 }
 

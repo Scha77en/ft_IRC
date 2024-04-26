@@ -134,6 +134,9 @@ bool Client::ChannelList(string name)
 
     for (it = _channels.begin(); it != _channels.end();++it)
     {
+        std::string nana = *it;
+        std::cout << "Channel Name: " << nana << " length: " << nana.length() << std::endl;
+        std::cout << "name ==> " << name << " length ==> " << name.length() << std::endl;
         if (*it == name)
             return (1);
     }
