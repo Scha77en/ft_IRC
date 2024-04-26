@@ -188,6 +188,8 @@ bool Channel::setUserLimit(std::vector<std::string> &m_args, std::string UserNam
     if (limit < 0)
         limit = -1;
     this->_limit = limit;
+    if (limit < ((int)_members.size() + (int)_admins.size()))
+        this->_limit = ((int)_members.size() + (int)_admins.size());
     m_args.erase(m_args.begin());
     return true;
 }
@@ -302,6 +304,8 @@ bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
             _admins.push_back(target);
         if (std::find(_members.begin(), _members.end(), target) != _members.end())
             _members.erase(std::remove(_members.begin(), _members.end(), target), _members.end());
+        
+        // UsersInChannel(UserSocket, name, client->GetClientIP());
     }
     else
     {

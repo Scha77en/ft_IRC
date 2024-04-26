@@ -1,6 +1,7 @@
 #include "Server.hpp"
 #include "Database.hpp"
 #include <iostream>
+#include <sys/socket.h>
 
 Server   *Server::instance = undefine;
 
@@ -303,7 +304,7 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
     ss << cmd;
     ss >> username >> modestate >> hostname;
     std::getline(ss, realname);
-    if (username.empty() || modestate.empty() || hostname.empty() || realname.empty())
+    if (username.empty() || modestate.empty() || hostname.empty() || realname.find_first_not_of("\t\v ") == std::string::npos)
     {
         send_reponse(ERR_NOTENOUGHPARAM(client->GetNickname()), NewClientSocket);
         return;
@@ -471,6 +472,11 @@ bool Server::ServerCreate()
         return EXIT_FAILURE;
     }
     int opt = 1;
+    if (setsockopt(server_socket, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) == EPIPE)
+    {
+        std::cerr << "Error: Setsockopt failed.\n";
+        return EXIT_FAILURE;
+    }
     if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt)) == -1)
     {
         std::cerr << "Error: Setsockopt failed.\n";

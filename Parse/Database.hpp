@@ -13,13 +13,16 @@
 #include <strings.h>
 #include "Client.hpp"
 #include "Channel.hpp"
+#include <arpa/inet.h>
+#include <netdb.h>
+#include <unistd.h>
 #include <map>
 
 
 // ------------------ TOPIC RPL AND ERR MESSAGES ------------------
 // #define RPL_TOPICIS(nickname, channelname, topic) (": 332 " + nickname + " #" +channelname + " :" + topic + "\r\n")
-#define RPL_TOPIC(client, channel, topic) ":irc.1337.com 332 " + client + " " + channel + " :" + topic + "\r\n"
-#define RPL_NOTOPIC(client, channel) ":irc.1337.com 331 " + client + " " + channel + " :No topic is set\r\n"
+#define RPL_TOPIC(client, channel, topic) ":irc.1337.com 332 " + client + " " + channel + " " + topic + "\r\n"
+#define RPL_NOTOPIC(client, channel) ":irc.1337.com 331 " + client + " " + channel + " No topic is set\r\n"
 #define ERR_NEEDMOREPARAMS(client, command) ":irc.1337.com 461 " + client + " " + command + " :Not enough parameters\n"
 #define ERR_NOSUCHCHANNEL(client, channel) ":irc.1337.com 403 " + client + " " + channel + " :No such channel\n"
 #define ERR_NOTONCHANNEL(client, channel) ":irc.1337.com 442 " + client + " " + channel + " :You're not on that channel\n"
@@ -133,6 +136,8 @@ class Database
 		void applyModeChange(char mode, bool addMode, Channel *channel, std::string UserName, std::vector<std::string> &m_args);
 		bool DoesChannelExist(std::string channelName);
 		bool IsUserInChannel(std::string channelName, std::string UserName);
+
+		std::string getIPAddress(void);
 
 		// ------------ ERROR AND REPLY HANDLING ------------
 
