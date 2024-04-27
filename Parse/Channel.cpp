@@ -109,10 +109,12 @@ void Channel::SetSymbol(std::string status)
 
 void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
 {
+    (void)IP;
     std::string output;
     std::stringstream Respond;
+    // Database *db = Database::GetInstance();
 
-    Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << ChannelName() + " :";
+    Respond << ":irc.1337.com 353 " << username + " = " << ChannelName() + " :";
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)

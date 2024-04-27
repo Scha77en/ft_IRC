@@ -279,6 +279,8 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
         info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "QUIT" || command.at(0) == "quit") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
+        else if ((command.at(0) == "/BOT" || command.at(0) == "/bot") && command.size())
+            info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "PONG" || command.at(0) == "pong") && command.size())
             return ;
         else if (command.size())

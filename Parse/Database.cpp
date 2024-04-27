@@ -52,11 +52,11 @@ void Database::NoticeUserPART(string ChannelName, string username, int UserSocke
             size_t posX = msg.find(" ");
             msg = ":" + msg.substr(0, posX);
         }
-        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
+        output = ":" + username + "!" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
 
     }
     else
-        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + "\n";
+        output = ":" + username + "!" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + "\n";
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
         if (it->second->ChannelList(ChannelName))
@@ -77,7 +77,7 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
     Client *user = service->GetClient(username);
 
     if (msg.empty() || (msg.length() <= 2 && msg.length() > 0 && msg[0] == ':' && msg[1] == '\0'))
-        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " :" + target + "\n";
+        output = ":" + username + "!" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " :" + target + "\n";
     else
     {
         size_t pos = msg.find(":");
@@ -86,7 +86,7 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
             size_t posX = msg.find(" ");
             msg = ":" + msg.substr(0, posX);
         }
-        output = ":" + username + "!~" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " " + msg + "\n";
+        output = ":" + username + "!" + user->GetNickname() +  "@" + IP + " KICK " + ChannelName + " " + target + " " + msg + "\n";
     }
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
@@ -110,7 +110,7 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 	if (!User) {
 		std::cout << "User not found" << std::endl;
 		return ;
-	}           
+	}
 
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
@@ -122,8 +122,9 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 				Respond.str("");
 				std::cout << "Channel ==> [" << name << "] size ==> " << name.size() << std::endl;
 				// std::string channel_N = name.substr(0, name.size() - 1);
-				// Respond << ":test!~test@127.0.0.1 JOIN #chan\r\n";
-				Respond << ":" + User->GetNickname() + "!~" + User->GetUsername() + "@" + getIPAddress() + " JOIN " + name << "\r\n";
+				// Respond << ":test!test@127.0.0.1 JOIN #chan\r\n";
+				std::cout << "USER IP ==>> " << User->GetClientIP() << std::endl;
+				Respond << ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " JOIN " + name << "\r\n";
 				output = Respond.str();
 				send(socket, output.c_str(), output.length(), 0);
 			}
@@ -133,10 +134,10 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 	if (channel == undefine)
 		return ;
 	std::cout << "-- Channel Name : " << name << std::endl;
-	if (channel->getTopic().empty())
-		RPL_NOTOPIC_331(username, name, UserSocket);
-	else
-		RPL_TOPIC_332(username, name, channel->getTopic(), UserSocket);
+	// if (channel->getTopic().empty())
+	// 	RPL_NOTOPIC_331(username, name, UserSocket);
+	// else
+	// 	RPL_TOPIC_332(username, name, channel->getTopic(), UserSocket);
 	SYSTEM_CHANNEL::iterator it;
 	for (it = channels.begin(); it != channels.end(); ++it)
 	{
@@ -147,8 +148,8 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 		}
 	}
 	Respond.str("");
-	// Respond << ":" + GetServerIP() + " 366 " + username << " " + name + " :End of /NAMES list." << std::endl;
-	Respond << ":" + User->GetNickname() + "!~" + User->GetUsername() + "@" + getIPAddress() + " :End of /NAMES list." << "\r\n";
+	Respond << ":irc.1337.com 366 " + username << " " + name + " :End of /NAMES list." << std::endl;
+	// Respond << ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + getIPAddress() + " :End of /NAMES list." << "\r\n";
 	output = Respond.str();
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
@@ -287,13 +288,14 @@ void Database::HandelMultiChannel(string data, int UserSocket)
             if (channel->isInviteOnly())
             {
 				int state = channel->DoesClientExist(username);
-				if (state == 3) {
-					channel->addMember(username);
-					NoticeUserHasJoined(EXIST, username, UserSocket, IP);
+				if (state == 1 || state == 2) {
+					ERR_443_USERONCHANNEL(EXIST, GetUserBySocket(UserSocket), username, UserSocket);
 					continue;
 				}
-                ERR_INVITEONLYCHAN_473(EXIST, UserSocket, username, IP);
-                continue;
+				else if (state != 3) {
+                	ERR_INVITEONLYCHAN_473(EXIST, UserSocket, username, IP);
+					continue;
+				}
             }
             if (channel->GetSecretKey() != it->second)
             {
@@ -528,6 +530,10 @@ void Database::ParseUserInput(string data, int UserSocket)
 		service->HandleMode(data, UserSocket);
 		return ;
 	}
+	else if (command == "/BOT" || command == "/bot") {
+		service->HandleBot(data, UserSocket);
+		return ;
+	}
 
 	CleanInput(data, ' ');
     std::stringstream cmd(data);
@@ -572,10 +578,10 @@ void Database::PRIVMessages(string data, string name, string username)
 		std::cout << "=====> it->first : " << it->first << std::endl;
 		std::cout << "=====> it->second->GetNickname() : " << it->second->GetNickname() << std::endl;
         string CHECK(it->first);
-        if (CHECK.empty() || CHECK.back() != '\0')
-            CHECK.push_back('\0');
-		std::cout << "______________________CHECK == [" << CHECK << "]" << std::endl;
-		std::cout << "______________________username == [" << username << "]" << std::endl;
+        // if (CHECK.empty() || CHECK.back() != '\0')
+        //     CHECK.push_back('\0');
+		std::cout << "______________________CHECK == [" << CHECK << "] length ==> " << CHECK.length() << std::endl;
+		std::cout << "______________________username == [" << username << "] length ==> " << username.length() << std::endl;
         if (CHECK == username)
         {
            hostname = it->second->GetClientIP();
@@ -589,13 +595,13 @@ void Database::PRIVMessages(string data, string name, string username)
         ERR_NOSUCHNICK_401(username, name, senderSocket);
         return ;
     }
-	std::string _username = username.substr(0, username.size() - 1);
-    Client *user = GetClient(_username);
-	_username = name.substr(0, name.size() - 1);
-	if (!user) {
-		std::cout << "User not found" << std::endl;
-		return ;
-	}
+	// std::string _username = username.substr(0, username.size() - 1);
+    Client *user = GetClient(username);
+	// _username = name.substr(0, name.size() - 1);
+	// if (!user) {
+	// 	std::cout << "User not found" << std::endl;
+	// 	return ;
+	// }
     size_t pos = data.find(":");
     if (pos == std::string::npos)
     {
@@ -603,10 +609,10 @@ void Database::PRIVMessages(string data, string name, string username)
         data = ":" + data.substr(0, posX);
     }
 		//    std::cout << "--------------- HNA FIN TRA L7WA -------------------------- " << std::endl;
-    std::string output = ":"+ user->GetNickname() + "!~"+ user->GetUsername() +"@" + getIPAddress() + " PRIVMSG "+ _username + " " + data + "\r\n";
+    std::string output = ":"+ user->GetNickname() + "!"+ user->GetUsername() +"@" + user->GetClientIP() + " PRIVMSG "+ name + " " + data + "\r\n";
 	std::cout << "output : " << output << std::endl;
 		//    std::cout << "--------------- SFI RAH 5REJ -------------------------- " << std::endl;
-    // string output = ":"+ username + "!~" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
+    // string output = ":"+ username + "!" + USER + "@" + hostname + " PRIVMSG " + name + " " + data + "\n";
     send(socketFailed, output.c_str(), output.length(), 0);
 }
 
@@ -650,7 +656,9 @@ void Database::DisplayMessages(string data, string name, string username, int Us
     string output;
     bool is_out = undefine;
     std::stringstream Respond;
-    int socketFailed = undefine;
+    // int socketFailed = undefine;
+	Channel *channel = GetChannel(name);
+	Client *user = GetClient(username);
 
     // if (name.empty() || name.back() != '\0')
 	// {
@@ -658,24 +666,37 @@ void Database::DisplayMessages(string data, string name, string username, int Us
     //     name.push_back('\0');
 	// }
 	// name = ExtractChannelName(name);
-    if (username.empty() || username.back() != '\0')
-        username.push_back('\0');
-    for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
-    {
-        string CHECK(it->first);
-        if (CHECK.empty() || CHECK.back() != '\0')
-            CHECK.push_back('\0');
-        if (it->second->ChannelList(name) && CHECK == username)
-            is_out = 1;
-        if (CHECK == username)
-            socketFailed = it->second->GetSocket();
-    }
+    // if (username.empty() || username.back() != '\0')
+    //     username.push_back('\0');
+    // for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+    // {
+    //     string CHECK(it->first);
+    //     // if (CHECK.empty() || CHECK.back() != '\0')
+    //     //     CHECK.push_back('\0');
+	// 	std::cout << YELLOW "CHECK == [" << CHECK << "] length ==> " << CHECK.length() << std::endl;
+	// 	std::cout << "username == [" << username << "] length ==> " << username.length() << RESET << std::endl;
+    //     if (it->second->ChannelList(name) && CHECK == username)
+    //         is_out = 1;
+    //     if (CHECK == username)
+    //         socketFailed = it->second->GetSocket();
+    // }
+	for (SYSTEM_CHANNEL::iterator it = channels.begin(); it != channels.end(); ++it) {
+		if (it->first == name) {
+			is_out = 1;
+			break;
+		}
+	}
     if (is_out == undefine)
     {
 		std::cout << YELLOW "RA D5EL WLD L9A7BA [22]" RESET << std::endl;
         ERR_NOSUCHCHANNEL_403(username, name, UserSocket);
         return ;
     }
+	int state = channel->DoesClientExist(username);
+	if (state == 0 || state == 3) {
+		ERR_NOTONCHANNEL_442(username, UserSocket, name);
+		return ;
+	}
     size_t pos = data.find(":");
     if (pos == std::string::npos)
     {
@@ -691,8 +712,8 @@ void Database::DisplayMessages(string data, string name, string username, int Us
             {
                 it->second->GetNickname();
 				// std::string Channel_N = name.substr(0, name.size() - 1);
-                output = ":"+username+ "!~"+it->second->GetUsername()+"@" + getIPAddress() + " PRIVMSG "+ name + " " + data + "\r\n";
-                // output = ":"+username+ "!~"+it->second->GetNickname()+"@" + it->second->GetClientIP() + " PRIVMSG "+name+" "+data+"\n";
+                output = ":"+username+ "!"+it->second->GetUsername()+"@" + user->GetClientIP() + " PRIVMSG "+ name + " " + data + "\r\n";
+                // output = ":"+username+ "!"+it->second->GetNickname()+"@" + it->second->GetClientIP() + " PRIVMSG "+name+" "+data+"\n";
                 send(socket, output.c_str(), output.length(), 0);
             }
         }
@@ -996,6 +1017,176 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 	}
 }
 
+void	Database::HandleBot(std::string data, int UserSocket) {
+	std::string command, username, arg, message;
+	std::stringstream ss(data);
+	Client *user = GetClient(GetUserBySocket(UserSocket));
+
+	ss >> command >> arg;
+	username = GetUserBySocket(UserSocket);
+
+	std::cout << "command : " << command << std::endl;
+	std::cout << "username : " << username << std::endl;
+	std::cout << "arg : " << arg << std::endl;
+
+	if (arg.empty() || arg[0] == '\0') {
+		std::string reply = ":BOT : Hi, i'm your bot, i can help you explaining the commands\n"
+		":BOT : You can use the following commands :\n"
+		":BOT : /BOT JOIN\n" ":BOT : /BOT PART\n" ":BOT : /BOT TOPIC\n" ":BOT : /BOT MODE\n" ":BOT : /BOT INVITE\n" ":BOT : /BOT KICK\n" ":BOT : /BOT PRIVMSG\n"
+		":BOT : After using one of the noted commands, i can explain to you how to use it and what are they for\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+
+	else if (arg == "JOIN" || arg == "join") {
+		std::string reply = ":BOT : The JOIN command is used to join a channel\n"
+		":BOT : You can use the following syntax :\n"
+		":BOT : JOIN #channel; where #channel is the name of the channel you want to join\n"
+		":BOT : if you want to join multiple channels, you can use the following syntax :\n"
+		":BOT : JOIN #channel1,#channel2,#channel3, ... ,#channelN\n"
+		":BOT : If the channel does not exist, it will be created\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+	else if (arg == "PART" || arg == "part") {
+		std::string reply = ":BOT : The PART command is used to leave a channel\n"
+		":BOT : You can use the following syntax :\n"
+		":BOT : PART #channel; where #channel is the name of the channel you want to leave\n"
+		":BOT : if you want to leave multiple channels, you can use the following syntax :\n"
+		":BOT : PART #channel1,#channel2,#channel3, ... ,#channelN\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+	else if (arg == "TOPIC" || arg == "topic") {
+		std::string reply = ":BOT : The TOPIC command is used to set the topic of a channel\n"
+		":BOT : You can use the following syntax :\n"
+		":BOT : TOPIC #channel :new_topic; where #channel is the name of the channel and new_topic is the new topic\n"
+		":BOT : if you want to get the topic of a channel, you can use the following syntax :\n"
+		":BOT : TOPIC #channel\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+	else if (arg == "MODE" || arg == "mode") {
+		std::string reply = ":BOT : The MODE command is used to change the mode of a channel\n"
+		":BOT : You can use the following syntax :\n"
+		":BOT : MODE #channel +/-mode; where #channel is the name of the channel and mode is the mode you want to change\n"
+		":BOT : The followig are the available modes :\n"
+		":BOT : MODE #<channel> (+/-)i : invite only, setting this mode will remove or allow only invited users to join the <channel>\n"
+		":BOT : (+/-)o <user> : operator, setting this mode will give or remove the <user> operator privileges\n"
+		":BOT : (+/-)t : topic protection, setting this mode will prevent members from changing the topic of the <channel>\n"
+		"Only the channel operator can change the mode of the channel\n"
+		":BOT : (+/-)k <password> : password, setting this mode will require a password to join the <channel>\n"
+		":BOT : (+/-)l <number> : limit, setting this mode will limit the number of users that can join the <channel>\n"
+		":BOT : if you want to get the mode of a channel, you can use the following syntax :\n"
+		":BOT : MODE #<channel>\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+	else if (arg == "INVITE" || arg == "invite") {
+		std::string reply = ":BOT : The INVITE command is used to invite a user to a channel\n"
+		":BOT : You can use the following syntax :\n"
+		":BOT : INVITE #channel username; where #channel is the name of the channel and username is the name of the user you want to invite\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+	else if (arg == "KICK" || arg == "kick") {
+		std::string reply = ":BOT : The KICK command is used to kick a user from a channel\n"
+		":BOT : You can use the following syntax :\n"
+		":BOT : KICK #channel username; where #channel is the name of the channel and username is the name of the user you want to kick\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+	else if (arg == "PRIVMSG" || arg == "privmsg") {
+		std::string reply = ":BOT : The PRIVMSG command is used to send a private message to a user or a channel\n"
+		":BOT : You can use the following syntax :\n"
+		":BOT : PRIVMSG #channel :message; where #channel is the name of the channel and message is the message you want to send\n"
+		":BOT : if you want to send a private message to a user, you can use the following syntax :\n"
+		":BOT : PRIVMSG username :message\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+	else {
+		std::string reply = ":BOT : The command you entered is not valid\n"
+		":BOT : You can use the following commands :\n"
+		":BOT : /BOT JOIN\n" ":BOT : /BOT PART\n" ":BOT : /BOT TOPIC\n" ":BOT : /BOT MODE\n" ":BOT : /BOT INVITE\n" ":BOT : /BOT KICK\n" ":BOT : /BOT PRIVMSG\n";
+		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		while (1) {
+			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
+			send(UserSocket, _data.c_str(), _data.length(), 0);
+			reply = reply.substr(reply.find_first_of('\n') + 1);
+			if (reply.empty())
+				break;
+			rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
+		}
+		return ;
+	}
+}
+
+
 std::string Database::ExtractChannelName(std::string input) {
 	size_t pos;
 
@@ -1062,34 +1253,34 @@ void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::s
 		case 'i':
 			channel->setInviteOnly(addMode);
 			if (addMode)
-				broadcast = "324 " + UserName + " " + channel->ChannelName() + " +i\n";
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +i " + GetUserBySocket(TargetSocket) + "\r\n";
 			else
-				broadcast = "324 " + UserName + " " + channel->ChannelName() + " -i\n";
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -i " + GetUserBySocket(TargetSocket) + "\r\n";
 			channel->BroadCastMessage(broadcast);
 			break;
 		case 't':
 			channel->setProtectedTopic(addMode);
 			if (addMode)
-				broadcast = "324 " + UserName + " " + channel->ChannelName() + " +t\n";
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +t " + GetUserBySocket(TargetSocket) + "\r\n";
 			else
-				broadcast = "324 " + UserName + " " + channel->ChannelName() + " -t\n";
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -t " + GetUserBySocket(TargetSocket) + "\r\n";
 			channel->BroadCastMessage(broadcast);
 			break;
 		case 'l':
 			if (channel->setUserLimit(m_args, UserName, addMode)) {
 				if (addMode)
-					broadcast = "324 " + UserName + " " + channel->ChannelName() + " +l\n";
+					broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +l " + GetUserBySocket(TargetSocket) + "\r\n";
 				else
-					broadcast = "324 " + UserName + " " + channel->ChannelName() + " -l\n";
+					broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -l " + GetUserBySocket(TargetSocket) + "\r\n";
 				channel->BroadCastMessage(broadcast);
 			}
 			break;
 		case 'k':
 			if (channel->setKey(m_args, addMode, UserName)) {
 			if (addMode)
-				broadcast = "324 " + UserName + " " + channel->ChannelName() + " +k\n";
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +k " + GetUserBySocket(TargetSocket) + "\r\n";
 			else
-				broadcast = "324 " + UserName + " " + channel->ChannelName() + " -k\n";
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -k " + GetUserBySocket(TargetSocket) + "\r\n";
 			channel->BroadCastMessage(broadcast);
 			}
 			break;
@@ -1100,12 +1291,12 @@ void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::s
 			if (addMode)
 			{
 				std::cout << "______________Target Name : " << GetUserBySocket(TargetSocket) << std::endl;
-				std::cout << "______________IP : " << getIPAddress() << std::endl;
-				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + getIPAddress() + " MODE " + channel->ChannelName() + " +o " + GetUserBySocket(TargetSocket) + "\r\n";
+				std::cout << "______________IP : " << User->GetClientIP() << std::endl;
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +o " + GetUserBySocket(TargetSocket) + "\r\n";
 			}
 				// broadcast = ":324 " + UserName + " " + channel->ChannelName() + " +o\n";
 			else
-				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + getIPAddress() + " MODE " + channel->ChannelName() + " -o " + GetUserBySocket(TargetSocket) + "\r\n";
+				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -o " + GetUserBySocket(TargetSocket) + "\r\n";
 			channel->BroadCastMessage(broadcast);
 			}
 			break;

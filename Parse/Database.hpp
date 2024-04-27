@@ -129,6 +129,7 @@ class Database
 		void	HandleTopic(std::string data, int UserSocket);
 		void	HandleMode(std::string data, int UserSocket);
 		void	HandleInvite(std::string data, int UserSocket);
+		void	HandleBot(std::string data, int UserSocket);
 
 		std::string ExtractChannelName(std::string data);
 		std::string ExtractTopic(std::string data, bool *two_dots);
