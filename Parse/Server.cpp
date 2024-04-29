@@ -65,11 +65,14 @@ void Server::send_reponse(std::string response, int fd)
 
 void Server::WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
 {
-    string M001 = ":irc.1337.com 001 "+username+" :Welcome to the Internet Relay Network "+username+"!"+user+"@"+hostname+"\n";
-    string M002 = ":irc.1337.com 002 "+username+" :Your host is "+hostname+", running version InspIRCd-3.10\n";
-    string M003 = ":irc.1337.com 003 "+username+" :This server was created on " + this->Getdt() + "\n"; 
-    string M004 = ":irc.1337.com 004 "+username+" irc.1337.com InspIRCd-3.10 iobl\n";
-    string M005 = ":irc.1337.com 005 "+username+" CHANTYPES=# :are supported by this server\n";
+    (void)user;
+    (void)username;
+    Client *client = GetClient(NewClientSocket);
+    string M001 = ":irc.1337.com 001 "+ client->GetNickname() +" :Welcome to the Internet Relay Network " + client->GetNickname() + "!" + client->GetRealName() + "@"+hostname + "\r\n";
+    string M002 = ":irc.1337.com 002 "+ client->GetNickname() +" :Your host is "+hostname+", running version InspIRCd-3.10\r\n";
+    string M003 = ":irc.1337.com 003 "+ client->GetNickname() +" :This server was created on " + this->Getdt() + "\r\n"; 
+    string M004 = ":irc.1337.com 004 "+ client->GetNickname() +" irc.1337.com InspIRCd-3.10 iobl\r\n";
+    string M005 = ":irc.1337.com 005 "+ client->GetNickname() +" CHANTYPES=# :are supported by this server\r\n";
     send(NewClientSocket, M001.c_str(), M001.length(), 0);
     send(NewClientSocket, M002.c_str(), M002.length(), 0);
     send(NewClientSocket, M003.c_str(), M003.length(), 0);
@@ -326,12 +329,11 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
         realname = "";
         sasa >> realname;
     }
-    std::cout << "[2222222] ------ [" << realname << "]" << std::endl;
-    std::cout << "[000000] realname = " << realname << std::endl;
+    std::cout << "[0000000] ------ [" << realname << "]" << std::endl;
     std::cout << "Client username = " << client->GetUsername() << std::endl;
     if (client->GetUsername().empty())
     {
-        client->setUsername(username);
+        client->SetUserName(username);
         client->SetRealName(realname);
         client->SetAuth(1);
         std::cout << "client username = " << client->GetUsername() << std::endl;

@@ -57,14 +57,15 @@ class Client
         string GetPass(void);
         bool GetAuth(void);
         
+        std::string GetName(void);
+
         void SetAuth(bool status);
         void NewClient(int fd);
-        void SetUserName(string name);
-        void SetNickName(string name);
-        void SetRealName(string name);
+        void SetUserName(std::string username);
+        void SetNickName(std::string nickname);
+        void SetRealName(std::string realname);
         void SetPass(string pass);
         void SaveChannel(std::string name);
-	    void setUsername(std::string username);
         void SetConnection(bool status);
         void ActiveInChannel(std::string name);
         void ChannelLogout(std::string name);

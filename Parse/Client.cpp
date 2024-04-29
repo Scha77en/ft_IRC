@@ -15,9 +15,9 @@ void Client::NewClient(int fd)
 	this->socket = fd;
 }
 
-void Client::SetNickName(string name)
+void Client::SetNickName(std::string nickname)
 {
-    this->_nickname = name;
+    this->_nickname = nickname;
 }
 
 void Client::SetRealName(std::string realname)
@@ -25,9 +25,9 @@ void Client::SetRealName(std::string realname)
     this->_realname = realname;
 }
 
-void Client::SetUserName(string name)
+void Client::SetUserName(string username)
 {
-    this->_username = name;
+    this->_username = username;
 }
 
 void Client::SetPass(string pass)
@@ -99,18 +99,18 @@ void Client::NewClientIP(struct in_addr ClientIP)
 
 string Client::GetClientIP(void)
 {
-    std::cout << "IP ===> " << this->_ip << std::endl;
+    // std::cout << "IP ===> " << this->_ip << std::endl;
     return (this->_ip);
+}
+
+string Client::GetName(void)
+{
+    return this->_username;
 }
 
 int Client::GetSocket(void)
 {
     return this->socket;
-}
-
-void Client::setUsername(std::string username) 
-{
-	this->_username = username;
 }
 
 void Client::SaveChannel(std::string name)
