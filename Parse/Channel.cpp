@@ -159,7 +159,8 @@ void Channel::PartFromChannels(std::string member)
     it = std::find(_invited.begin(), _invited.end(), member);
     if (it != _invited.end())
         _invited.erase(it);
-
+    // if (_members.size() == 0 && _admins.size() == 0 && _invited.size() == 0)
+    //     delete this;
 }
 
 // ***************************************************************************

@@ -127,7 +127,7 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 				// output = ":" + username + "!~" + User->GetUsername() +  "@" + IP + " JOIN " + name + "\n";
 				output = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " JOIN " + name + "\r\n";
 				// output = Respond.str();
-				// std::cout << "output ==> " << output << std::endl;
+				std::cout << "output ==> " << output << std::endl;
 				send(socket, output.c_str(), output.length(), 0);
 			}
 		}
@@ -260,7 +260,7 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     }
 	// std::cout << "[2]" <<  std::endl;
     string IP = user->GetClientIP();
-	// std::cout << "ip mn client : " << IP << std::endl;
+	std::cout << "ip mn client : " << IP << std::endl;
 	// std::cout << "[3]" <<  std::endl;
     SYSTEM_KEYVAL ProcessChannels = parseChannels(data, UserSocket, username);
 	// std::cout << "[4]" <<  std::endl;
@@ -533,7 +533,7 @@ void Database::ParseUserInput(string data, int UserSocket)
 		service->HandleMode(data, UserSocket);
 		return ;
 	}
-	else if (command == "/BOT" || command == "/bot") {
+	else if (command == "BOT" || command == "bot") {
 		service->HandleBot(data, UserSocket);
 		return ;
 	}
@@ -691,7 +691,7 @@ void Database::DisplayMessages(string data, string name, string username, int Us
 	}
     if (is_out == undefine)
     {
-		std::cout << YELLOW "RA D5EL WLD L9A7BA [22]" RESET << std::endl;
+		// std::cout << YELLOW "RA D5EL WLD L9A7BA [22]" RESET << std::endl;
         ERR_NOSUCHCHANNEL_403(username, name, UserSocket);
         return ;
     }
@@ -715,7 +715,7 @@ void Database::DisplayMessages(string data, string name, string username, int Us
             {
                 it->second->GetNickname();
 				// std::string Channel_N = name.substr(0, name.size() - 1);
-                output = ":"+username+ "!"+it->second->GetUsername()+"@" + user->GetClientIP() + " PRIVMSG "+ name + " " + data + "\r\n";
+                output = ":" + username + "!" + user->GetRealName() + "@" + user->GetClientIP() + " PRIVMSG "+ name + " " + data + "\r\n";
                 // output = ":"+username+ "!"+it->second->GetNickname()+"@" + it->second->GetClientIP() + " PRIVMSG "+name+" "+data+"\n";
                 send(socket, output.c_str(), output.length(), 0);
             }
@@ -1005,6 +1005,11 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 		return ;
 	}
 	else {
+		Client *targetClient = GetClient(target);
+		if (!targetClient) {
+			ERR_NOSUCHNICK(username, target, UserSocket);
+			return ;
+		}
 		state = it->second->DoesClientExist(target);
 		if (state == 0 || state == 3) {
 			RPL_341_INVITING(username, target, channelName, UserSocket);
@@ -1439,6 +1444,16 @@ std::string Database::getIPAddress() {
 }
 
 // -----------------------------------------------------------
+
+void Database::RemoveClient(const std::string& name)
+{
+	SYSTEM_CLIENT::iterator it = clients.find(name);
+	if (it != clients.end())
+	{
+		delete it->second;
+		clients.erase(it);
+	}
+}
 
 Database::~Database()
 {

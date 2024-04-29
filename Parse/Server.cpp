@@ -67,9 +67,10 @@ void Server::WelcomeMsg(int NewClientSocket,string username, string user, string
 {
     (void)user;
     (void)username;
+    (void)hostname;
     Client *client = GetClient(NewClientSocket);
-    string M001 = ":irc.1337.com 001 "+ client->GetNickname() +" :Welcome to the Internet Relay Network " + client->GetNickname() + "!" + client->GetRealName() + "@"+hostname + "\r\n";
-    string M002 = ":irc.1337.com 002 "+ client->GetNickname() +" :Your host is "+hostname+", running version InspIRCd-3.10\r\n";
+    string M001 = ":irc.1337.com 001 "+ client->GetNickname() +" :Welcome to the Internet Relay Network " + client->GetNickname() + "!" + client->GetRealName() + "@"+ client->GetClientIP() + "\r\n";
+    string M002 = ":irc.1337.com 002 "+ client->GetNickname() +" :Your host is "+client->GetClientIP()+", running version InspIRCd-3.10\r\n";
     string M003 = ":irc.1337.com 003 "+ client->GetNickname() +" :This server was created on " + this->Getdt() + "\r\n"; 
     string M004 = ":irc.1337.com 004 "+ client->GetNickname() +" irc.1337.com InspIRCd-3.10 iobl\r\n";
     string M005 = ":irc.1337.com 005 "+ client->GetNickname() +" CHANTYPES=# :are supported by this server\r\n";
@@ -118,6 +119,7 @@ bool Server::ProcessClient()
                     new_client->NewClientIP(client_addr.sin_addr);
                     clients.push_back(new_client);
                     fds.push_back(newfd);
+                    std::cout << "Client IP is " << new_client->GetClientIP() << "\n";
                     std::cout << "New client connected " << new_client_socket << " from " << inet_ntoa(client_addr.sin_addr) << "\n";
                 }
                 else
@@ -185,6 +187,9 @@ bool Server::ProcessClient()
 
 void Server::removeClient(int fd)
 {
+    Database *db = Database::GetInstance();
+    std::string nickname = db->GetUserBySocket(fd);
+    db->RemoveClient(nickname);
     for (size_t i = 0; i < clients.size(); i++)
     {
         if (clients.at(i)->GetSocket() == fd)
@@ -282,7 +287,7 @@ void Server::checkPass(std::string &cmd, int NewClientSocket)
         info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "QUIT" || command.at(0) == "quit") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
-        else if ((command.at(0) == "/BOT" || command.at(0) == "/bot") && command.size())
+        else if ((command.at(0) == "BOT" || command.at(0) == "bot") && command.size())
             info->ParseUserInput(cmd, NewClientSocket);
         else if ((command.at(0) == "PONG" || command.at(0) == "pong") && command.size())
             return ;

@@ -139,6 +139,7 @@ class Database
 		bool IsUserInChannel(std::string channelName, std::string UserName);
 
 		std::string getIPAddress(void);
+		void RemoveClient(const std::string &name);
 
 		// ------------ ERROR AND REPLY HANDLING ------------
 
