@@ -10,7 +10,7 @@ void Server::SetPort(int port)
     PORT = port;
 }
 
-void Server::SetPassword(string password)
+void Server::SetPassword(std::string password)
 {
     PASSWORD = password;
 }
@@ -20,17 +20,17 @@ int Server::GetPort()
     return PORT;
 }
 
-string Server::GetPassword()
+std::string Server::GetPassword()
 {
     return PASSWORD;
 }
 
-void Server::Setdt(string dt)
+void Server::Setdt(std::string dt)
 {
     this->dt = dt;
 }
 
-string Server::Getdt()
+std::string Server::Getdt()
 {
     return this->dt;
 }
@@ -46,7 +46,8 @@ Server* Server::getInstance(std::string _PORT, std::string _PASSWORD)
             exit(EXIT_FAILURE);
         }
         instance->SetPort(std::atoi(_PORT.c_str()));
-        instance->SetPassword(_PASSWORD);
+        std::string pass = _PASSWORD.substr(_PASSWORD.find_first_not_of(" \r\t"));
+        instance->SetPassword(pass);
     }
     return instance;
 }
@@ -59,17 +60,17 @@ void Server::send_reponse(std::string response, int fd)
     }
 }
 
-void Server::WelcomeMsg(int NewClientSocket,string username, string user, string hostname)
+void Server::WelcomeMsg(int NewClientSocket,std::string username, std::string user, std::string hostname)
 {
     (void)user;
     (void)username;
     (void)hostname;
     Client *client = GetClient(NewClientSocket);
-    string M001 = ":irc.1337.com 001 "+ client->GetNickname() +" :Welcome to the Internet Relay Network " + client->GetNickname() + "!" + client->GetRealName() + "@"+ client->GetClientIP() + "\r\n";
-    string M002 = ":irc.1337.com 002 "+ client->GetNickname() +" :Your host is "+client->GetClientIP()+", running version InspIRCd-3.10\r\n";
-    string M003 = ":irc.1337.com 003 "+ client->GetNickname() +" :This server was created on " + this->Getdt() + "\r\n"; 
-    string M004 = ":irc.1337.com 004 "+ client->GetNickname() +" irc.1337.com InspIRCd-3.10 iobl\r\n";
-    string M005 = ":irc.1337.com 005 "+ client->GetNickname() +" CHANTYPES=# :are supported by this server\r\n";
+    std::string M001 = ":irc.1337.com 001 "+ client->GetNickname() +" :Welcome to the Internet Relay Network " + client->GetNickname() + "!" + client->GetRealName() + "@"+ client->GetClientIP() + "\r\n";
+    std::string M002 = ":irc.1337.com 002 "+ client->GetNickname() +" :Your host is "+client->GetClientIP()+", running version InspIRCd-3.10\r\n";
+    std::string M003 = ":irc.1337.com 003 "+ client->GetNickname() +" :This server was created on " + this->Getdt() + "\r\n"; 
+    std::string M004 = ":irc.1337.com 004 "+ client->GetNickname() +" irc.1337.com InspIRCd-3.10 iobl\r\n";
+    std::string M005 = ":irc.1337.com 005 "+ client->GetNickname() +" CHANTYPES=# :are supported by this server\r\n";
     send(NewClientSocket, M001.c_str(), M001.length(), 0);
     send(NewClientSocket, M002.c_str(), M002.length(), 0);
     send(NewClientSocket, M003.c_str(), M003.length(), 0);
@@ -206,7 +207,7 @@ Client *Server::GetClient(int fd)
     return NULL;
 }
 
-std::vector<std::string> Server::split_buffer(string buffer)
+std::vector<std::string> Server::split_buffer(std::string buffer)
 {
     std::vector<std::string> command;
     std::string token;
@@ -340,8 +341,10 @@ void Server::Set_nickname(std::string &cmd, int NewClientSocket)
             send_reponse(ERR_NICKINUSE(cmd), NewClientSocket);
             return;
         }
-        std::cout << "Nickname is set to " << cmd << ".\n";
-        client->SetNickName(cmd);
+        std::stringstream ss(cmd);
+        std::string nickname;
+        ss >> nickname;
+        client->SetNickName(nickname);
         client->SetAuth(1);
     }
     else
@@ -374,7 +377,7 @@ void Server::authenticate(std::string &cmd, int NewClientSocket)
         send_reponse(ERR_NOTREGISTERED(std::string ("guess")), NewClientSocket);
     else if (client->GetConnection() == 0)
     {
-        string pass = cmd;
+        std::string pass = cmd;
         if (pass == PASSWORD)
         {
             std::cout << "Password is correct.\n";
@@ -390,7 +393,7 @@ void Server::authenticate(std::string &cmd, int NewClientSocket)
 
 }
 
-std::vector<std::string> Server::spliting_command(string &command)
+std::vector<std::string> Server::spliting_command(std::string &command)
 {
     std::vector<std::string> command_;
     std::string token;

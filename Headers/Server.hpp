@@ -24,7 +24,6 @@
 
 //error reply
 #define ERR_INCORPASS(nickname) (": 464 " + nickname + " :Password incorrect !" + "\r\n" )
-// #define RPL_PASSCORRECT(nickname) (": 464 " + nickname + " :Password correct !" + "\r\n" )
 #define ERR_ALREADYREGISTERED(nickname) (": 462 " + nickname + " :You may not reregister !" + "\r\n" )
 #define ERR_NONICKNAME(nickname) (": 431 " + nickname + " :No nickname given" + "\r\n" )
 #define ERR_NICKINUSE(nickname) (": 433 " + nickname + " :Nickname is already in use" + "\r\n")
@@ -34,12 +33,9 @@
 #define ERR_NOTENOUGHPARAM(nickname) (": 461 " + nickname + " :Not enough parameters." + "\r\n")
 #define ERR_UNKNOWNCOMMAND(nickname) (": 421 " + nickname + " :Unknown command" + "\r\n")
 
-// #define MAX_CLIENTS 30
 
-// const int PORT = 5554;
 const int BUFFER_SIZE = 1024;
 
-typedef std::string string;
 
 class Server 
 {
@@ -50,39 +46,35 @@ class Server
         static Server* instance;
 
         struct sockaddr_in server_addr;
-        // struct pollfd fds[MAX_CLIENTS];
         std::vector<struct pollfd> fds;
         std::vector<struct in_addr> client_ips;
         std::vector<Client *> clients;
 
-        // struct in_addr client_ips[30];
 
         socklen_t addrlen;
         int server_socket;
         int PORT;
-        string PASSWORD;
-        string dt;
+        std::string PASSWORD;
+        std::string dt;
 
         Database *info;
 
     public:
 
-        void Setdt(string dt);
-        string Getdt();
+        void Setdt(std::string dt);
+        std::string Getdt();
         void SetPort(int port);
-        void SetPassword(string password);
+        void SetPassword(std::string password);
         int  GetPort();
-        string  GetPassword();
-        // void RegisterClient(int NewClientSocket);
+        std::string  GetPassword();
 
         Client *GetClient(int fd);
-        std::vector<std::string> split_buffer(string buffer);
-        std::vector<std::string> spliting_command(string &command);
+        std::vector<std::string> split_buffer(std::string buffer);
+        std::vector<std::string> spliting_command(std::string &command);
         
-        void WelcomeMsg(int NewClientSocket, string username, string user,string hostname);
+        void WelcomeMsg(int NewClientSocket, std::string username, std::string user,std::string hostname);
         void removeClient(int fd);
         void removeFDS(int fd);
-        // void removeClientFromChannel(int fd);
         bool checkNickName(std::string &command);
         void send_reponse(std::string response, int fd);
         void authenticate(std::string &cmd, int NewClientSocket);

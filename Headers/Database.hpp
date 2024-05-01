@@ -61,7 +61,6 @@ class server;
 
 const int xBUFFER_SIZE = 1024;
 
-typedef std::string string;
 typedef std::vector<std::string> STORE;
 
 typedef std::map<std::string, Client* > SYSTEM_CLIENT;
@@ -97,33 +96,33 @@ class Database
 		void	PrintChannels();
 		void 	SetServerIP(struct in_addr host);
 		void    AddClient(Client* client);
-        void    ParseUserInput(string data, int UserSocket);
-        void    DisplayMessages(int UserSocket, string data);
-        void    ListUsersChannels(string data, int UserSocket);
-        void    StartCommunication(int UserSocket, string data);
+        void    ParseUserInput(std::string data, int UserSocket);
+        void    DisplayMessages(int UserSocket, std::string data);
+        void    ListUsersChannels(std::string data, int UserSocket);
+        void    StartCommunication(int UserSocket, std::string data);
 
 
-        void    HandelMultiChannel(string data, int UserSocket);
-		void 	HandelMultiPART(string data, int UserSocket);
-		void 	HandelKick(string data, int UserSocket);
+        void    HandelMultiChannel(std::string data, int UserSocket);
+		void 	HandelMultiPART(std::string data, int UserSocket);
+		void 	HandelKick(std::string data, int UserSocket);
 
 
-        void 	NoticeUserHasJoined(string name, string username, int UserSocket, string IP);
-		void 	NoticeUserPART(string ChannelName, string username, int UserSocket, string IP, string msg);
-		void 	NoticeUserKICK(string ChannelName, string username, string IP, string target, string msg);
+        void 	NoticeUserHasJoined(std::string name, std::string username, int UserSocket, std::string IP);
+		void 	NoticeUserPART(std::string ChannelName, std::string username, int UserSocket, std::string IP, std::string msg);
+		void 	NoticeUserKICK(std::string ChannelName, std::string username, std::string IP, std::string target, std::string msg);
 
 		void    AddChannel(const std::string& name, Channel* channel);
-        void    DisplayMessages(string data, string name, string username, int UserSocket);
-        void    NoticeUserLogout(string name, string username);
-		void 	PRIVMessages(string data, string name, string username);
+        void    DisplayMessages(std::string data, std::string name, std::string username, int UserSocket);
+        void    NoticeUserLogout(std::string name, std::string username);
+		void 	PRIVMessages(std::string data, std::string name, std::string username);
 
         Client* GetClient(const std::string& name);
 		Channel* GetChannel(const std::string& name);
 
-		string GetServerIP(void);
-        string GetUserBySocket(int UserSocket);
+		std::string GetServerIP(void);
+        std::string GetUserBySocket(int UserSocket);
 
-		int GetUserSocket(string name);
+		int GetUserSocket(std::string name);
 
 	
 		void	HandleTopic(std::string data, int UserSocket);
@@ -159,33 +158,33 @@ class Database
 };
 
 // Reply.cpp
-void ERR_NORECIPIENT_411(string username, int UserSocket);
-void ERR_NOTEXTTOSEND_412(string username, int UserSocket);
-void ERR_NOSUCHNICK_401(string username, string target, int UserSocket);
-void ERR_NEEDMOREPARAMS_461(string name, int UserSocket, string username);
-void ERR_NOSUCHCHANNEL_403(string username, string target, int UserSocket);
-void ERR_TOOMANYCHANNELS_405(string name, int UserSocket, string username);
-void ERR_UNKNOWNCOMMAND_421(string command, int UserSocket, string username);
-void RPL_AWAY_301(string username, string target, string msg ,int UserSocket);
-void ERR_CANNOTSENDTOCHAN_404(string username, string target, int UserSocket);
-void ERR_NOTONCHANNEL_442(string username, int UserSocket, string ChannelName);
-void ERR_CHANOPRIVSNEEDED_482(string username, int UserSocket, string ChannelName);
-void ERR_BADCHANNELKEY_475(string name, string username, int UserSocket, string IP);
-void ERR_CHANNELISFULL_471(string name, int UserSocket, string username, string IP);
-void ERR_BANNEDFROMCHAN_474(string name, int UserSocket, string username, string IP);
-void ERR_INVITEONLYCHAN_473(string name, int UserSocket, string username, string IP);
+void ERR_NORECIPIENT_411(std::string username, int UserSocket);
+void ERR_NOTEXTTOSEND_412(std::string username, int UserSocket);
+void ERR_NOSUCHNICK_401(std::string username, std::string target, int UserSocket);
+void ERR_NEEDMOREPARAMS_461(std::string name, int UserSocket, std::string username);
+void ERR_NOSUCHCHANNEL_403(std::string username, std::string target, int UserSocket);
+void ERR_TOOMANYCHANNELS_405(std::string name, int UserSocket, std::string username);
+void ERR_UNKNOWNCOMMAND_421(std::string command, int UserSocket, std::string username);
+void RPL_AWAY_301(std::string username, std::string target, std::string msg ,int UserSocket);
+void ERR_CANNOTSENDTOCHAN_404(std::string username, std::string target, int UserSocket);
+void ERR_NOTONCHANNEL_442(std::string username, int UserSocket, std::string ChannelName);
+void ERR_CHANOPRIVSNEEDED_482(std::string username, int UserSocket, std::string ChannelName);
+void ERR_BADCHANNELKEY_475(std::string name, std::string username, int UserSocket, std::string IP);
+void ERR_CHANNELISFULL_471(std::string name, int UserSocket, std::string username, std::string IP);
+void ERR_BANNEDFROMCHAN_474(std::string name, int UserSocket, std::string username, std::string IP);
+void ERR_INVITEONLYCHAN_473(std::string name, int UserSocket, std::string username, std::string IP);
 
 // Outils.cpp
-STORE GetSendingList(string data, string &message);
-STORE TokenRangeExtract(string data);
-void	RemoveNewLine(string &str);
+STORE GetSendingList(std::string data, std::string &message);
+STORE TokenRangeExtract(std::string data);
+void	RemoveNewLine(std::string &str);
 void	GetCommand(const char* buffer, std::string& command, std::string& channel);
-void	RemoveCharacter(int ASCII, string &target);
-void	ExtractTwoRnages(string data, string &ch, string &ky);
+void	RemoveCharacter(int ASCII, std::string &target);
+void	ExtractTwoRnages(std::string data, std::string &ch, std::string &ky);
 void	CleanInput(std::string &data, char Delimiter);
-bool Protection(string data);
-bool Potection403(string data);
-SYSTEM_KEYVAL	parseChannels(string &input, int SK, string username);
+bool Protection(std::string data);
+bool Potection403(std::string data);
+SYSTEM_KEYVAL	parseChannels(std::string &input, int SK, std::string username);
 
 #endif
 

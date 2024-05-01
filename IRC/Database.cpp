@@ -30,15 +30,15 @@ void Database::SetServerIP(struct in_addr host)
 	this->server_ip = host;
 }
 
-string Database::GetServerIP(void)
+std::string Database::GetServerIP(void)
 {
-	string HOST(inet_ntoa(server_ip));
+	std::string HOST(inet_ntoa(server_ip));
 	return (HOST);
 }
 
-void Database::NoticeUserPART(string ChannelName, string username, int UserSocket, string IP, string msg)
+void Database::NoticeUserPART(std::string ChannelName, std::string username, int UserSocket, std::string IP, std::string msg)
 {
-    string output;
+    std::string output;
 
     Database *service = Database::GetInstance();
     Client *user = service->GetClient(username);
@@ -68,9 +68,9 @@ void Database::NoticeUserPART(string ChannelName, string username, int UserSocke
     send(UserSocket, output.c_str(), output.length(), 0);
 }
 
-void Database::NoticeUserKICK(string ChannelName, string username, string IP, string target, string msg)
+void Database::NoticeUserKICK(std::string ChannelName, std::string username, std::string IP, std::string target, std::string msg)
 {
-    string output;
+    std::string output;
 
     Database *service = Database::GetInstance();
     Client *user = service->GetClient(username);
@@ -98,10 +98,10 @@ void Database::NoticeUserKICK(string ChannelName, string username, string IP, st
     }
 }
 
-void Database::NoticeUserHasJoined(string name, string username, int UserSocket, string IP)
+void Database::NoticeUserHasJoined(std::string name, std::string username, int UserSocket, std::string IP)
 {
 	(void)IP;
-	string output;
+	std::string output;
 	std::stringstream Respond;
 	Client *User = GetClient(username);
 
@@ -140,9 +140,9 @@ void Database::NoticeUserHasJoined(string name, string username, int UserSocket,
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
 
-void Database::NoticeUserLogout(string name, string username)
+void Database::NoticeUserLogout(std::string name, std::string username)
 {
-	string output;
+	std::string output;
 	std::stringstream Respond;
 
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
@@ -161,21 +161,21 @@ void Database::NoticeUserLogout(string name, string username)
 	}
 }
 
-void Database::HandelMultiChannel(string data, int UserSocket)
+void Database::HandelMultiChannel(std::string data, int UserSocket)
 {
-    string args;
+    std::string args;
     SYSTEM_KEYVAL::iterator it;
 
     CleanInput(data, ' ');
     Database *service = Database::GetInstance();
-    string username = service->GetUserBySocket(UserSocket);
+    std::string username = service->GetUserBySocket(UserSocket);
     Client *user = service->GetClient(username);
     if (Protection(data) || data.empty())
     {
         ERR_NEEDMOREPARAMS_461("JOIN",UserSocket, username);
         return ;
     }
-    string IP = user->GetClientIP();
+    std::string IP = user->GetClientIP();
     SYSTEM_KEYVAL ProcessChannels = parseChannels(data, UserSocket, username);
     for (it = ProcessChannels.begin(); it != ProcessChannels.end();it++)
     {
@@ -239,14 +239,14 @@ void Database::HandelMultiChannel(string data, int UserSocket)
     }
 }
 
-void Database::HandelMultiPART(string data, int UserSocket)
+void Database::HandelMultiPART(std::string data, int UserSocket)
 {
-    string args;
+   std::string args;
     SYSTEM_KEYVAL::iterator it;
 
     CleanInput(data, ' ');
     Database *service = Database::GetInstance();
-    string username = service->GetUserBySocket(UserSocket);
+    std::string username = service->GetUserBySocket(UserSocket);
     Client *user = service->GetClient(username);
 
     if (Protection(data) || data.empty())
@@ -264,21 +264,21 @@ void Database::HandelMultiPART(string data, int UserSocket)
     if (pos == std::string::npos)
     {
         size_t posX = part1.find(' ');
-        string NotFound = part1.substr(0, posX);
+        std::string NotFound = part1.substr(0, posX);
         ERR_NOSUCHCHANNEL_403(username, NotFound, UserSocket);
         return ;
     }
     std::getline(Object, part2);
     bool is_inChannel = undefine;
-    string IP = user->GetClientIP();
+    std::string IP = user->GetClientIP();
     SYSTEM_KEYVAL ProcessChannels = parseChannels(data, UserSocket, username);
     for (it = ProcessChannels.begin(); it != ProcessChannels.end();it++)
     {
-        string EXIST(it->first);
+        std::string EXIST(it->first);
 		SYSTEM_CHANNEL::iterator xit;
         for (xit = service->channels.begin(); xit != service->channels.end() && !is_inChannel; ++xit)
         {
-            string Detected(xit->first);
+            std::string Detected(xit->first);
             if (Detected == EXIST)
             {
                 is_inChannel = 1;
@@ -295,12 +295,12 @@ void Database::HandelMultiPART(string data, int UserSocket)
     }
 }
 
-void Database::HandelKick(string data, int UserSocket)
+void Database::HandelKick(std::string data, int UserSocket)
 {
     CleanInput(data, ' ');
 
     Database *service = Database::GetInstance();
-    string username = service->GetUserBySocket(UserSocket);
+    std::string username = service->GetUserBySocket(UserSocket);
     Client *user = service->GetClient(username);
 
     if (data.empty())
@@ -328,15 +328,15 @@ void Database::HandelKick(string data, int UserSocket)
     }
     std::getline(Object, part3);
 
-    string ChannelName(part1);
-    string TrgetUsername(part2);
+    std::string ChannelName(part1);
+    std::string TrgetUsername(part2);
 
     bool not_found = undefine;
-    string IP = user->GetClientIP();
+    std::string IP = user->GetClientIP();
     SYSTEM_CHANNEL::iterator xit;
     for (xit = service->channels.begin(); xit != service->channels.end(); ++xit)
     {
-        string Detected(xit->first);
+        std::string Detected(xit->first);
 
         if (Detected == ChannelName)
         {
@@ -372,27 +372,27 @@ void Database::HandelKick(string data, int UserSocket)
         ERR_NOSUCHCHANNEL_403(username, ChannelName, UserSocket);
 }
 
-void Protection421(string command, int UserSocket, string username)
+void Protection421(std::string command, int UserSocket, std::string username)
 {
-	string output = ":irc.1337.com 421 " + username + " " + command + " :Unknown command\n";
+	std::string output = ":irc.1337.com 421 " + username + " " + command + " :Unknown command\n";
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
 
-void Protection403(string command, int UserSocket, string username)
+void Protection403(std::string command, int UserSocket, std::string username)
 {
-	string output = ":irc.1337.com 403 " + username + " " + command + " :Unknown command\n";
+	std::string output = ":irc.1337.com 403 " + username + " " + command + " :Unknown command\n";
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
 
-void Database::ParseUserInput(string data, int UserSocket)
+void Database::ParseUserInput(std::string data, int UserSocket)
 {
-	string args;
-	string command;
+	std::string args;
+	std::string command;
 
 	GetCommand(data.c_str(), command, args);
 
 	Database *service = Database::GetInstance();
-	string username = service->GetUserBySocket(UserSocket);
+	std::string username = service->GetUserBySocket(UserSocket);
 	//Client *user = service->GetClient(username);
 
 
@@ -430,23 +430,23 @@ void Database::ParseUserInput(string data, int UserSocket)
 		Protection421(command, UserSocket, username);
 }
 
-void ERR_NOSUCHNICK(string username, string target, int UserSocket)
+void ERR_NOSUCHNICK(std::string username, std::string target, int UserSocket)
 {
-	string output = ":irc.1337.com 401 " + username + " " + target + " :No such nick/channel\n";
+	std::string output = ":irc.1337.com 401 " + username + " " + target + " :No such nick/channel\n";
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
 
-void Database::PRIVMessages(string data, string name, string username)
+void Database::PRIVMessages(std::string data, std::string name, std::string username)
 {
     int senderSocket = undefine;
     int socketFailed = GetUserSocket(name);
 
-    string USER = "";
-    string hostname = "";
+    std::string USER = "";
+    std::string hostname = "";
 
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
-        string CHECK(it->first);
+        std::string CHECK(it->first);
         if (CHECK == username)
         {
            hostname = it->second->GetClientIP();
@@ -472,13 +472,13 @@ void Database::PRIVMessages(string data, string name, string username)
 }
 
 
-void Database::StartCommunication(int UserSocket, string data)
+void Database::StartCommunication(int UserSocket, std::string data)
 {
-    string msg;
+    std::string msg;
     STORE List;
 
     Database *service = Database::GetInstance();
-    string username = service->GetUserBySocket(UserSocket);
+    std::string username = service->GetUserBySocket(UserSocket);
     CleanInput(data, ' ');
 
     if (data.empty() || Protection(data))
@@ -502,9 +502,9 @@ void Database::StartCommunication(int UserSocket, string data)
     }
 }
 
-void Database::DisplayMessages(string data, string name, string username, int UserSocket)
+void Database::DisplayMessages(std::string data, std::string name, std::string username, int UserSocket)
 {
-    string output;
+    std::string output;
     bool is_out = undefine;
     std::stringstream Respond;
 	Channel *channel = GetChannel(name);
@@ -559,7 +559,7 @@ void Database::PrintChannels()
 		std::cout << "=> [" << it->first << "]  --> " << it->first.length() << std::endl;
 }
 
-string Database::GetUserBySocket(int UserSocket)
+std::string Database::GetUserBySocket(int UserSocket)
 {
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
@@ -569,7 +569,7 @@ string Database::GetUserBySocket(int UserSocket)
 	return ("");
 }
 
-int Database::GetUserSocket(string name)
+int Database::GetUserSocket(std::string name)
 {
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
@@ -604,7 +604,7 @@ void    Database::HandleTopic(std::string data, int UserSocket)
 	ss >> command >> C_N;
 	std::getline(ss, N_topic);
 
-	string Channel_N(C_N);
+	std::string Channel_N(C_N);
 
 	if (Channel_N[0] == '\0') {
 		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
@@ -699,8 +699,8 @@ void    Database::HandleMode(std::string data, int UserSocket)
 	while (ss >> remain)
 		m_args.push_back(remain);
 
-	string channelName(C_N);
-	string modes(Modes_);
+	std::string channelName(C_N);
+	std::string modes(Modes_);
     
 	if (modes.empty() || modes.back() != '\0')
         modes.push_back('\0');

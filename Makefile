@@ -9,7 +9,7 @@ SRC_DIR = ./IRC
 HEADER_DIR = ./Headers
 OBJ_DIR = ./OBJ
 
-CPPFLAGS = -Wall -Wextra -Werror -std=c++98 -g -fsanitize=address
+CPPFLAGS = -Wall -Wextra -Werror -std=c++98
 
 HEADERS = $(wildcard $(HEADER_DIR)/*.hpp)
 SOURCES = $(wildcard $(SRC_DIR)/*.cpp)

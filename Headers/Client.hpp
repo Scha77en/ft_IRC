@@ -14,8 +14,6 @@
 
 #define undefine 0
 
-typedef std::string string;
-
 class Client
 {
     private:
@@ -27,38 +25,38 @@ class Client
         bool online;
         bool Auth;
 
-        string _ip;
-        string _username;
-        string _realname;
-        string _pass;
-	    string _nickname;
+        std::string _ip;
+        std::string _username;
+        std::string _realname;
+        std::string _pass;
+	    std::string _nickname;
 	    std::vector<std::string> _channels;
-        string bufferClient;
+        std::string bufferClient;
 	
     public:
 	
 	    Client();
 	    ~Client();
 
-        void SetBufferClient(string buffer);
-        string GetBufferClient(void);
+        void SetBufferClient(std::string buffer);
+        std::string GetBufferClient(void);
         void clearBufferClient(void);
 
         int GetSocket(void);
         int GetChannelID(void);
 
         bool GetConnection();
-        bool ChannelList(string name);
+        bool ChannelList(std::string name);
         bool LogoutFromAllChannels();
         bool LimitedChannels(void);
-        bool DeleteChannel(string name);
+        bool DeleteChannel(std::string name);
 
-        string GetClientIP(void);
-        string GetUsername(void);
+        std::string GetClientIP(void);
+        std::string GetUsername(void);
         std::string GetNickname(void);
         std::string GetRealName(void);
-        string GetChannelName(int index);
-        string GetPass(void);
+        std::string GetChannelName(int index);
+        std::string GetPass(void);
         bool GetAuth(void);
         
         std::string GetName(void);
@@ -68,7 +66,7 @@ class Client
         void SetUserName(std::string username);
         void SetNickName(std::string nickname);
         void SetRealName(std::string realname);
-        void SetPass(string pass);
+        void SetPass(std::string pass);
         void SaveChannel(std::string name);
         void SetConnection(bool status);
         void ActiveInChannel(std::string name);

@@ -25,22 +25,22 @@ void Client::SetRealName(std::string realname)
     this->_realname = realname;
 }
 
-void Client::SetUserName(string username)
+void Client::SetUserName(std::string username)
 {
     this->_username = username;
 }
 
-void Client::SetPass(string pass)
+void Client::SetPass(std::string pass)
 {
     this->_pass = pass;
 }
 
-string Client::GetUsername(void)
+std::string Client::GetUsername(void)
 {
     return this->_username;
 }
 
-string Client::GetNickname(void)
+std::string Client::GetNickname(void)
 {
     return this->_nickname;
 }
@@ -50,7 +50,7 @@ std::string Client::GetRealName(void)
     return this->_realname;
 }
 
-string Client::GetPass(void)
+std::string Client::GetPass(void)
 {
     return this->_pass;
 }
@@ -65,12 +65,12 @@ void Client::SetAuth(bool status)
     this->Auth = status;
 }
 
-void Client::SetBufferClient(string buffer)
+void Client::SetBufferClient(std::string buffer)
 {
     this->bufferClient += buffer;
 }
 
-string Client::GetBufferClient(void)
+std::string Client::GetBufferClient(void)
 {
     return this->bufferClient;
 }
@@ -108,16 +108,16 @@ std::vector<std::string> Client::GetAllChannels(void)
 
 void Client::NewClientIP(struct in_addr ClientIP)
 {
-    string IP(inet_ntoa(ClientIP));
+    std::string IP(inet_ntoa(ClientIP));
     this->_ip = IP;
 }
 
-string Client::GetClientIP(void)
+std::string Client::GetClientIP(void)
 {
     return (this->_ip);
 }
 
-string Client::GetName(void)
+std::string Client::GetName(void)
 {
     return this->_username;
 }
@@ -142,7 +142,7 @@ bool Client::GetConnection()
     return this->online;
 }
 
-bool Client::ChannelList(string name)
+bool Client::ChannelList(std::string name)
 {
     std::vector<std::string>::iterator it;
 
@@ -155,7 +155,7 @@ bool Client::ChannelList(string name)
     return undefine;
 }
 
-bool Client::DeleteChannel(string name)
+bool Client::DeleteChannel(std::string name)
 {
     std::vector<std::string>::iterator it;
 
@@ -171,7 +171,7 @@ bool Client::DeleteChannel(string name)
 }
 
 
-void Client::ActiveInChannel(string name)
+void Client::ActiveInChannel(std::string name)
 {
     int index = 0;
     std::vector<std::string>::iterator it;
@@ -193,7 +193,7 @@ int Client::GetChannelID(void)
     return this->channelID;
 }
 
-string Client::GetChannelName(int index)
+std::string Client::GetChannelName(int index)
 {
     int i = 0;
     std::vector<std::string>::iterator it;

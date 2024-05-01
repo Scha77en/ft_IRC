@@ -1,13 +1,13 @@
 #include "../Headers/Database.hpp"
 
-void ExtractTwoRnages(string data, string &ch, string &ky) 
+void ExtractTwoRnages(std::string data, std::string &ch, std::string &ky) 
 {
     std::stringstream Process(data);
 
     Process >> ch >> ky;
 }
 
-void RemoveCharacter(int ASCII, string &target)
+void RemoveCharacter(int ASCII, std::string &target)
 {
     int x = 0;
     while (target[x])
@@ -27,18 +27,18 @@ void GetCommand(const char* buffer, std::string& command, std::string& channel)
     ss >> command >> channel;
 }
 
-void RemoveNewLine(string &str)
+void RemoveNewLine(std::string &str)
 {
     size_t pos = 0;
     while ((pos = str.find('\n', pos)) != std::string::npos)
         str.erase(pos, 1);
 }
 
-STORE TokenRangeExtract(string data)
+STORE TokenRangeExtract(std::string data)
 {
     STORE Extracted;
 
-    string MiniToken;
+    std::string MiniToken;
     std::istringstream Object(data);
 
     while (std::getline(Object, MiniToken, ','))
@@ -46,7 +46,7 @@ STORE TokenRangeExtract(string data)
     return (Extracted);
 }
 
-STORE GetSendingList(string data, string &message)
+STORE GetSendingList(std::string data, std::string &message)
 {
     STORE List;
 
@@ -66,10 +66,10 @@ STORE GetSendingList(string data, string &message)
     return (List);
 }
 
-SYSTEM_KEYVAL parseChannels(string &input, int SK, string username) 
+SYSTEM_KEYVAL parseChannels(std::string &input, int SK, std::string username) 
 {
     SYSTEM_KEYVAL result;
-    string ch, ky;
+    std::string ch, ky;
     STORE RangeChannels, RangeKeys;
 
     ExtractTwoRnages(input, ch, ky);
@@ -105,7 +105,7 @@ SYSTEM_KEYVAL parseChannels(string &input, int SK, string username)
     return result;
 }
 
-bool Protection(string data)
+bool Protection(std::string data)
 {
     int count = 0, i = 0;
 
@@ -148,7 +148,7 @@ void CleanInput(std::string &data, char Delimiter)
     data = output;
 }
 
-bool Potection403(string data)
+bool Potection403(std::string data)
 {
     size_t position = data.find('#');
     return (position == std::string::npos);
