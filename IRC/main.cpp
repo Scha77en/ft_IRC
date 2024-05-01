@@ -1,5 +1,5 @@
-#include "Server.hpp"
-#include "Channel.hpp"
+#include "../Headers/Server.hpp"
+#include "../Headers/Channel.hpp"
 
 int main(int ac, char **av)
 {

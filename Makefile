@@ -1,34 +1,39 @@
 NAME = ircserv
-
 CPP = c++
 
-CPPFLAGS = -Wall -Wextra -Werror -std=c++98 #-g -fsanitize=address
+RED = \033[0;31m
+GREEN = \033[0;32m
+RESET = \033[0m
 
-HEADER_P = Parse/Server.hpp Parse/Channel.hpp Parse/Database.hpp Parse/Client.hpp
+SRC_DIR = ./IRC
+HEADER_DIR = ./Headers
+OBJ_DIR = ./OBJ
 
-# Directories
-SRCDIR = Parse
-BINDIR = bin
+CPPFLAGS = -Wall -Wextra -Werror -std=c++98 -g -fsanitize=address
 
-# Source files
-SOURCES = $(wildcard $(SRCDIR)/*.cpp)
+HEADERS = $(wildcard $(HEADER_DIR)/*.hpp)
+SOURCES = $(wildcard $(SRC_DIR)/*.cpp)
+OBJECTS = $(patsubst $(SRC_DIR)/%.cpp,$(OBJ_DIR)/%.o,$(SOURCES))
 
-# Object files
-OBJECTS = $(SOURCES:$(SRCDIR)/%.cpp=$(BINDIR)/%.o)
+all: $(OBJ_DIR) $(NAME)
+	@echo "${GREEN}--------------- server is ready ---------------${RESET}"
 
-all:$(NAME)
+$(OBJ_DIR):
+	@mkdir -p $@
 
 $(NAME): $(OBJECTS)
 	@$(CPP) $(CPPFLAGS) $^ -o $@
 
-# Object file rule
-$(BINDIR)/%.o: $(SRCDIR)/%.cpp $(HEADER_P)
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.cpp $(HEADERS)
+	@mkdir -p $(dir $@)
 	@$(CPP) $(CPPFLAGS) -c $< -o $@
 
+clean:
+	@rm -rf $(OBJ_DIR)
+	@echo "${RED}--------------- Object files removed. ---------------${RESET}"
 
 fclean: clean
 	@rm -f $(NAME)
-clean:
-	@rm -f $(BINDIR)/*.o
+	@echo "${RED}--------------- $(NAME) removed. ---------------${RESET}"
 
 re: fclean all

@@ -1,4 +1,4 @@
-#include "Client.hpp"
+#include "../Headers/Client.hpp"
 
 Client::Client() 
 {
@@ -65,6 +65,21 @@ void Client::SetAuth(bool status)
     this->Auth = status;
 }
 
+void Client::SetBufferClient(string buffer)
+{
+    this->bufferClient += buffer;
+}
+
+string Client::GetBufferClient(void)
+{
+    return this->bufferClient;
+}
+
+void Client::clearBufferClient(void)
+{
+    this->bufferClient = "";
+}
+
 bool Client::LimitedChannels(void)
 {
     if (limited_channels <= 0)
@@ -99,7 +114,6 @@ void Client::NewClientIP(struct in_addr ClientIP)
 
 string Client::GetClientIP(void)
 {
-    // std::cout << "IP ===> " << this->_ip << std::endl;
     return (this->_ip);
 }
 
@@ -135,8 +149,6 @@ bool Client::ChannelList(string name)
     for (it = _channels.begin(); it != _channels.end();++it)
     {
         std::string nana = *it;
-        std::cout << "Channel Name: " << nana << " length: " << nana.length() << std::endl;
-        std::cout << "name ==> " << name << " length ==> " << name.length() << std::endl;
         if (*it == name)
             return (1);
     }

@@ -33,12 +33,16 @@ class Client
         string _pass;
 	    string _nickname;
 	    std::vector<std::string> _channels;
+        string bufferClient;
 	
     public:
 	
-        string bufferClient;
 	    Client();
 	    ~Client();
+
+        void SetBufferClient(string buffer);
+        string GetBufferClient(void);
+        void clearBufferClient(void);
 
         int GetSocket(void);
         int GetChannelID(void);
@@ -75,8 +79,6 @@ class Client
         tm *Getlogtime_client();
         void Setstart_time_client(time_t *dt);
         time_t *Getstart_time_client();
-
-        string GetBufferClient(void);
 
         std::vector<std::string> GetAllChannels(void);
 

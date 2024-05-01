@@ -1,4 +1,4 @@
-#include "Database.hpp"
+#include "../Headers/Database.hpp"
 
 void ERR_BADCHANNELKEY_475(string name, string username, int UserSocket, string IP)
 {
@@ -88,4 +88,82 @@ void RPL_AWAY_301(string username, string target, string msg ,int UserSocket)
 {
     string output = ":irc.1337.com 301 " + username + " " + target + " " + msg + "\n";
     send(UserSocket, output.c_str(), output.length(), 0);
+}
+
+
+// --------- ERRORS AND REPLYS ------------
+
+void    Database::ERR_442_NOTONCHANNEL(std::string username, std::string channelName, int UserSocket)
+{
+	std::string error = ERR_NOTONCHANNEL(username, channelName);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void    Database::ERR_461_NEEDMOREPARAMS(std::string username, std::string command, int UserSocket)
+{
+	std::string error = ERR_NEEDMOREPARAMS(username, command);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void    Database::ERR_403_NOSUCHCHANNEL(std::string username, std::string channelName, int UserSocket)
+{
+	std::string error = ERR_NOSUCHCHANNEL(username, channelName);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void    Database::ERR_482_CHANOPRIVSNEEDED(std::string username, std::string channelName, int UserSocket)
+{
+	std::string error = ERR_CHANOPRIVSNEEDED(username, channelName);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void    Database::RPL_NOTOPIC_331(std::string username, std::string channelName, int UserSocket)
+{
+	std::string error = RPL_NOTOPIC(username, channelName);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+void    Database::RPL_TOPIC_332(std::string username, std::string channelName, std::string topic, int UserSocket)
+{
+	std::string error = RPL_TOPIC(username, channelName, topic);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::RPL_324_CHANNELMODEIS(std::string username, std::string channelName, int UserSocket)
+{
+	std::string modes = channels[channelName]->GetModes();
+	std::string error = RPL_CHANNELMODEIS(username, channelName, modes);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::ERR_472_UNKNOWNMODE(std::string username, char mode, int UserSocket)
+{
+	std::string error = ERR_UNKNOWNMODE(username, mode);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::ERR_401_NOSUCHNICK(std::string username, std::string target, int UserSocket)
+{
+	std::string error = ERR_NOSUCHNICK_(username, target);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+
+void	Database::ERR_441_USERNOTINCHANNEL(std::string UserName, std::string target, std::string channelName, int UserSocket)
+{
+	std::string error = ERR_USERNOTINCHANNEL(UserName, target, channelName);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::RPL_341_INVITING(std::string UserName, std::string target, std::string channel, int UserSocket)
+{
+	Channel *channel_ = channels[channel];
+	channel_->AddInvited(target);
+	std::string error = RPL_INVITING(UserName, target, channel);
+	send(UserSocket, error.c_str(), error.length(), 0);
+}
+
+void	Database::ERR_443_USERONCHANNEL(std::string UserName, std::string target, std::string channel, int UserSocket)
+{
+	std::string error = ERR_USERONCHANNEL(UserName, target, channel);
+	send(UserSocket, error.c_str(), error.length(), 0);
 }

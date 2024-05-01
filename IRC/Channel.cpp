@@ -1,5 +1,5 @@
-#include "Channel.hpp"
-#include "Database.hpp"
+#include "../Headers/Channel.hpp"
+#include "../Headers/Database.hpp"
 
 Channel::~Channel() {}
 
@@ -7,8 +7,8 @@ Channel::Channel(std::string name, std::string key)
 {
 	this->_name = name;
     this->_key = key;
-    this->_limit = -1; // -1 => not set , 2 => Only for test
-    this->_invite_only = 0; // (true or false) 1 => For test only
+    this->_limit = -1;
+    this->_invite_only = 0;
 }
 
 bool Channel::isInviteOnly()
@@ -112,10 +112,8 @@ void Channel::UsersInChannel(int Sokect, std::string username, std::string IP)
     (void)IP;
     std::string output;
     std::stringstream Respond;
-    // Database *db = Database::GetInstance();
 
     Respond << ":irc.1337.com 353 " << username + " = " << ChannelName() + " :";
-    // Respond << ":" + IP + " 353 " << username + " " + GetSymbol() + " " << ChannelName() + " :";
     for (size_t i = 0;i < _members.size(); i++)
         Respond << _members[i] + " " ;
     for (size_t i = 0;i < _admins.size(); i++)
@@ -159,8 +157,6 @@ void Channel::PartFromChannels(std::string member)
     it = std::find(_invited.begin(), _invited.end(), member);
     if (it != _invited.end())
         _invited.erase(it);
-    // if (_members.size() == 0 && _admins.size() == 0 && _invited.size() == 0)
-    //     delete this;
 }
 
 // ***************************************************************************
@@ -239,12 +235,6 @@ bool Channel::isProtectedTopic()
 
 int Channel::DoesClientExist(const std::string Channel_N)
 {
-    // string Channel_N(name);
-    
-    // if (Channel_N.empty() || Channel_N.back() != '\0')
-    //     Channel_N.push_back('\0');
-
-    std::cout << "User name = " << Channel_N << std::endl;
     if (std::find(_admins.begin(), _admins.end(), Channel_N) != _admins.end())
         return (1);
     else if (std::find(_members.begin(), _members.end(), Channel_N) != _members.end())
@@ -263,7 +253,7 @@ void Channel::BroadCastMessage(std::string broadcast) {
         Client* client = Database::GetInstance()->GetClient(member);
         if (client != NULL) {
             // Get the client's socket
-            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+            int clientSocket = client->GetSocket();
 
             // Send the message to the client
             send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
@@ -278,7 +268,7 @@ void Channel::BroadCastMessage(std::string broadcast) {
         Client* client = Database::GetInstance()->GetClient(admin);
         if (client != NULL) {
             // Get the client's socket
-            int clientSocket = client->GetSocket(); // You'll need to implement this in the Client class
+            int clientSocket = client->GetSocket();
 
             // Send the message to the client
             send(clientSocket, broadcast.c_str(), broadcast.length(), 0);
@@ -308,8 +298,6 @@ bool Channel::SetOperator(std::string name, bool Mode, std::vector<std::string> 
             _admins.push_back(target);
         if (std::find(_members.begin(), _members.end(), target) != _members.end())
             _members.erase(std::remove(_members.begin(), _members.end(), target), _members.end());
-        
-        // UsersInChannel(UserSocket, name, client->GetClientIP());
     }
     else
     {

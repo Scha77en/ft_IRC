@@ -34,7 +34,6 @@
 #define ERR_NOTENOUGHPARAM(nickname) (": 461 " + nickname + " :Not enough parameters." + "\r\n")
 #define ERR_UNKNOWNCOMMAND(nickname) (": 421 " + nickname + " :Unknown command" + "\r\n")
 
-
 // #define MAX_CLIENTS 30
 
 // const int PORT = 5554;
@@ -74,7 +73,6 @@ class Server
         void SetPassword(string password);
         int  GetPort();
         string  GetPassword();
-        void ServerAddr();
         // void RegisterClient(int NewClientSocket);
 
         Client *GetClient(int fd);
