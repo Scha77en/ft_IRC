@@ -15,6 +15,17 @@ Database	*Database::GetInstance()
 	return DB;
 }
 
+void Database::CloseServer()
+{
+	if (server_socket != undefine)
+		close(server_socket);
+}
+
+void Database::SetServerSocket(int socket)
+{
+	this->server_socket = socket;
+}
+
 void Database::AddClient(Client *client)
 {
 	clients.insert(std::make_pair(client->GetNickname(), client));
@@ -51,11 +62,11 @@ void Database::NoticeUserPART(std::string ChannelName, std::string username, int
             size_t posX = msg.find(" ");
             msg = ":" + msg.substr(0, posX);
         }
-        output = ":" + username + "!" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
+        output = ":" + username + "!" + user->GetRealName() +  "@" + IP + " PART " + ChannelName + " " + msg + "\n";
 
     }
     else
-        output = ":" + username + "!" + user->GetNickname() +  "@" + IP + " PART " + ChannelName + "\n";
+        output = ":" + username + "!" + user->GetRealName() +  "@" + IP + " PART " + ChannelName + "\n";
     for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
     {
         if (it->second->ChannelList(ChannelName))
@@ -392,8 +403,7 @@ void Database::ParseUserInput(std::string data, int UserSocket)
 	GetCommand(data.c_str(), command, args);
 
 	Database *service = Database::GetInstance();
-	std::string username = service->GetUserBySocket(UserSocket);
-	//Client *user = service->GetClient(username);
+	std::string nickname = service->GetUserBySocket(UserSocket);
 
 
 	if (command == "TOPIC" || command == "topic") {
@@ -427,7 +437,7 @@ void Database::ParseUserInput(std::string data, int UserSocket)
 	else if (command == "KICK" || command == "kick")
         service->HandelKick(args, UserSocket);
 	else
-		Protection421(command, UserSocket, username);
+		Protection421(command, UserSocket, nickname);
 }
 
 void ERR_NOSUCHNICK(std::string username, std::string target, int UserSocket)
@@ -1089,20 +1099,29 @@ bool Database::IsUserInChannel(std::string channelName, std::string UserName)
 
 // -----------------------------------------------------------
 
-void Database::RemoveClient(const std::string& name)
+void Database::RemoveClient(int fd)
 {
-	SYSTEM_CLIENT::iterator it = clients.find(name);
-	if (it != clients.end())
-	{
-		delete it->second;
-		clients.erase(it);
+	std::string username = GetUserBySocket(fd);
+	Client *client = GetClient(username);
+	std::vector<std::string> channels = client->GetChannels();
+
+	for (size_t i = 0; i < channels.size(); i++) {
+		Channel *channel = GetChannel(channels[i]);
+		channel->PartFromChannels(username);
+		NoticeUserPART(channels[i], username, client->GetSocket(), client->GetClientIP(), "");
 	}
+	clients.erase(username);
 }
 
 Database::~Database()
 {
-	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+	std::cout << "Database destructor" << std::endl;
+	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it) {
 		delete it->second;
-	for (SYSTEM_CHANNEL::iterator it = channels.begin(); it != channels.end(); ++it)
+		clients.erase(it);
+	}
+	for (SYSTEM_CHANNEL::iterator it = channels.begin(); it != channels.end(); ++it) {
 		delete it->second;
+		channels.erase(it);
+	}
 }

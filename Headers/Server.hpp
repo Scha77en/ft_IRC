@@ -32,6 +32,7 @@
 #define ERR_CMDNOTFOUND(nickname, command) (": 421 " + nickname + " " + command + " :Unknown command" + "\r\n")
 #define ERR_NOTENOUGHPARAM(nickname) (": 461 " + nickname + " :Not enough parameters." + "\r\n")
 #define ERR_UNKNOWNCOMMAND(nickname) (": 421 " + nickname + " :Unknown command" + "\r\n")
+#define ERR_INPUTTOOLONG(nickname, hostname) ":" + hostname + " 417 " + nickname + " :Input line was too long !\r\n"
 
 
 const int BUFFER_SIZE = 1024;

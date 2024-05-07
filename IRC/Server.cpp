@@ -1,6 +1,7 @@
 #include "../Headers/Server.hpp"
 #include "../Headers/Database.hpp"
 #include <iostream>
+#include <new>
 #include <sys/socket.h>
 
 Server   *Server::instance = undefine;
@@ -80,13 +81,13 @@ void Server::WelcomeMsg(int NewClientSocket,std::string username, std::string us
 
 bool Server::ProcessClient()
 {
-    // struct pollfd newpoll;
-    info = Database::GetInstance();
     while (true)
     {
         int num_ready = poll(&fds[0], fds.size(), -1);
-        if (num_ready <= 0)
+        if (num_ready <= 0) {
+            closeFDS();
             throw std::runtime_error("poll failed");
+        }
         for (size_t i = 0; i < fds.size(); ++i)
         {
             if (fds.at(i).revents & POLLIN)
@@ -127,13 +128,19 @@ bool Server::ProcessClient()
                     int bytes_received = recv(fds.at(i).fd, buffer, BUFFER_SIZE, 0);
                     if (bytes_received <= 0) 
                     {
+                        std::cout << "Client ==> " << fds.at(i).fd << " disconnected.\n";
                         close(fds.at(i).fd);
                         removeClient(fds.at(i).fd);
                         removeFDS(fds.at(i).fd);
                     }
+                    else if (bytes_received > 512)
+                    {
+                        Client *client = GetClient(fds.at(i).fd);
+                        send_reponse(ERR_INPUTTOOLONG(client->GetNickname(), client->GetClientIP()), fds.at(i).fd);
+                    }
                     else
                     {
-                        info = Database::GetInstance();
+                        Database *info = Database::GetInstance();
                         Client *currClient = GetClient(fds.at(i).fd);
                         currClient->SetBufferClient(buffer);
                         size_t pos = currClient->GetBufferClient().find_first_of("\r\n");
@@ -164,10 +171,14 @@ bool Server::ProcessClient()
 
 void Server::removeClient(int fd)
 {
+    Database *db = Database::GetInstance();
     for (size_t i = 0; i < clients.size(); i++)
     {
-        if (clients.at(i)->GetSocket() == fd)
+        if (clients.at(i) != NULL && clients.at(i)->GetSocket() == fd)
         {
+            if (!clients.at(i)->GetNickname().empty() && !clients.at(i)->GetUsername().empty())
+                db->RemoveClient(fd);
+            delete clients.at(i);
             clients.erase(clients.begin() + i);
             break;
         }
@@ -188,10 +199,13 @@ void Server::removeFDS(int fd)
 
 void Server::closeFDS()
 {
-    for (size_t i = 0; i < fds.size(); i++)
+    if (clients.size())
     {
-        std::cout << "Client ==> " << clients.at(i)->GetSocket() << " disconnected.\n";
-        close(clients.at(i)->GetSocket());
+        for (size_t i = 0; i < fds.size(); i++)
+        {
+            std::cout << "Client ==> " << clients.at(i)->GetSocket() << " disconnected.\n";
+            close(clients.at(i)->GetSocket());
+        }
     }
     if (server_socket != undefine)
         close(server_socket);
@@ -277,6 +291,7 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
     std::string hostname;
     std::string modestate;
     std::string realname;
+    Database *db = Database::GetInstance();
 
     Client *client = GetClient(NewClientSocket);
     if (client->GetConnection() == 0)
@@ -284,13 +299,14 @@ void Server::Set_username(std::string &cmd, int NewClientSocket)
         send_reponse(ERR_NOTREGISTERED(client->GetNickname()), NewClientSocket);
         return;
     }
+    std::string fullcmd = cmd;
     cmd = cmd.substr(4); // Remove USER
     ss << cmd;
     ss >> username >> modestate >> hostname;
     std::getline(ss, realname);
     if (username.empty() || modestate.empty() || hostname.empty() || realname.find_first_not_of("\t\v ") == std::string::npos)
     {
-        send_reponse(ERR_NOTENOUGHPARAM(client->GetNickname()), NewClientSocket);
+        db->ERR_461_NEEDMOREPARAMS(client->GetNickname(), fullcmd, NewClientSocket);
         return;
     }
     int pos = realname.find_first_not_of("\t\v ");
@@ -363,6 +379,7 @@ bool Server::checkNickName(std::string& nickname)
 
 void Server::authenticate(std::string &cmd, int NewClientSocket)
 {
+    std::cout << "NewClientSocket ==> " << NewClientSocket << "\n";
     Client *client = GetClient(NewClientSocket);
 
     cmd = cmd.substr(4); // Remove PASS
@@ -410,6 +427,7 @@ bool Server::ServerCreate()
 {
     time_t now = time(0);
     this->Setdt(ctime(&now));
+    Database *db = Database::GetInstance();
 
     // Create a new socket
     if ((server_socket = socket(AF_INET, SOCK_STREAM, 0)) == -1) 
@@ -417,20 +435,24 @@ bool Server::ServerCreate()
         std::cerr << "Error: Could not create socket.\n";
         return EXIT_FAILURE;
     }
+    db->SetServerSocket(server_socket);
     int opt = 1;
     if (setsockopt(server_socket, SOL_SOCKET, SO_NOSIGPIPE, &opt, sizeof(opt)) == EPIPE)
     {
+        close(server_socket);
         std::cerr << "Error: Setsockopt failed.\n";
         return EXIT_FAILURE;
     }
     if (setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR , &opt, sizeof(opt)) == -1)
     {
+        close(server_socket);
         std::cerr << "Error: Setsockopt failed.\n";
         return EXIT_FAILURE;
     }
 
     if (fcntl(server_socket, F_SETFL, O_NONBLOCK) == -1)
     {
+        close(server_socket);
         std::cerr << "Error: Fcntl failed.\n";
         return EXIT_FAILURE;
     }
@@ -443,12 +465,14 @@ bool Server::ServerCreate()
 	//bind the socket to localhost port 8080 
 	if (bind(server_socket, (struct sockaddr *)&server_addr, sizeof(server_addr)) == -1) 
     {
+        close(server_socket);
         std::cerr << "Error: Bind failed.\n";
         return EXIT_FAILURE;
     }
     // Prepare to accept connections on socket FD.
-	if (listen(server_socket, 5) == -1) 
+	if (listen(server_socket, 1024) == -1) 
     {
+        close(server_socket);
         std::cerr << "Error: Listen failed.\n";
         return EXIT_FAILURE;
     }

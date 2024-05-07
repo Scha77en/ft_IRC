@@ -60,6 +60,7 @@ class Client
         bool GetAuth(void);
         
         std::string GetName(void);
+        std::vector<std::string> GetChannels(void);
 
         void SetAuth(bool status);
         void NewClient(int fd);

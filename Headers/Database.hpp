@@ -77,14 +77,15 @@ class Database
 
 		static Database* DB;
 
-		struct in_addr server_ip;
+		int				server_socket;
+		struct in_addr	server_ip;
 		
-		SYSTEM_CLIENT clients;
-		SYSTEM_CHANNEL channels;
+		SYSTEM_CLIENT	clients;
+		SYSTEM_CHANNEL	channels;
 
-		Client *client_;
-		Channel *channel_;
-		server *server_;
+		Client		*client_;
+		Channel		*channel_;
+		server		*server_;
 	
 	public:
 
@@ -137,7 +138,10 @@ class Database
 		bool DoesChannelExist(std::string channelName);
 		bool IsUserInChannel(std::string channelName, std::string UserName);
 
-		void RemoveClient(const std::string &name);
+		void RemoveClient(int fd);
+
+		void SetServerSocket(int socket);
+		void CloseServer(void);
 
 		// ------------ ERROR AND REPLY HANDLING ------------
 

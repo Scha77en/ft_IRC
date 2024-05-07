@@ -207,6 +207,11 @@ std::string Client::GetChannelName(int index)
     return ("");
 }
 
+std::vector<std::string> Client::GetChannels(void)
+{
+    return _channels;
+}
+
 void Client::ChannelLogout(std::string name)
 {
     std::vector<std::string>::iterator it = std::find(_channels.begin(), _channels.end(), name);
