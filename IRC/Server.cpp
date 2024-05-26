@@ -85,7 +85,10 @@ bool Server::ProcessClient()
     {
         int num_ready = poll(&fds[0], fds.size(), -1);
         if (num_ready <= 0) {
-            closeFDS();
+            if (fds.size() == 1)
+            {
+                closeFDS();
+            }
             throw std::runtime_error("poll failed");
         }
         for (size_t i = 0; i < fds.size(); ++i)
@@ -199,16 +202,16 @@ void Server::removeFDS(int fd)
 
 void Server::closeFDS()
 {
-    if (clients.size())
-    {
-        for (size_t i = 0; i < fds.size(); i++)
-        {
-            std::cout << "Client ==> " << clients.at(i)->GetSocket() << " disconnected.\n";
-            close(clients.at(i)->GetSocket());
-        }
-    }
+
     if (server_socket != undefine)
         close(server_socket);
+    if (clients.empty())
+        return;
+    for (size_t i = 0; i < fds.size(); i++)
+    {
+        std::cout << "Client ==> " << clients.at(i)->GetSocket() << " disconnected.\n";
+        close(clients.at(i)->GetSocket());
+    }
 }
 
 Client *Server::GetClient(int fd)

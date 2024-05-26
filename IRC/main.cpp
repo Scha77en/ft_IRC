@@ -4,18 +4,6 @@
 #include <memory>
 #include <sys/signal.h>
 
-// void leaks()
-// {
-// 	char cmd[1024];
-// 	sprintf(cmd, "lsof -p %d", getpid());
-// 	system(cmd);
-// }
-
-void leaks()
-{
-	system("leaks ircserv");
-}
-
 void	handle_signal(int signum){
 	
 	(void)signum;
@@ -25,7 +13,6 @@ void	handle_signal(int signum){
 
 int main(int ac, char **av)
 {
-	atexit(leaks);
 	if (ac != 3)
 	{
 		std::cerr << "Usage: ./parse [PORT] [PASSWORD]" << std::endl;

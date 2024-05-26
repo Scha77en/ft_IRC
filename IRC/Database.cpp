@@ -33,7 +33,10 @@ void Database::AddClient(Client *client)
 
 Client* Database::GetClient(const std::string& name)
 {
-	return clients[name];
+	SYSTEM_CLIENT::iterator it = clients.find(name);
+	if (it == clients.end())
+		return undefine;
+	return it->second;
 }
 
 void Database::SetServerIP(struct in_addr host)
@@ -252,7 +255,7 @@ void Database::HandelMultiChannel(std::string data, int UserSocket)
 
 void Database::HandelMultiPART(std::string data, int UserSocket)
 {
-   std::string args;
+	std::string args;
     SYSTEM_KEYVAL::iterator it;
 
     CleanInput(data, ' ');
@@ -293,6 +296,9 @@ void Database::HandelMultiPART(std::string data, int UserSocket)
             if (Detected == EXIST)
             {
                 is_inChannel = 1;
+				std::cout << "Channel: " << Detected << std::endl;
+				std::cout << "User: " << username << std::endl;
+				
                 xit->second->PartFromChannels(username);
             }
         }
@@ -395,6 +401,14 @@ void Protection403(std::string command, int UserSocket, std::string username)
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
 
+void Database::printusers()
+{
+	Database *service = Database::GetInstance();
+	std::cout << "Clients:" << std::endl;
+	for (SYSTEM_CLIENT::iterator it = service->clients.begin(); it != service->clients.end(); ++it)
+		std::cout << "=> [" << it->first << "]  --> " << it->first.length() << std::endl;
+}
+
 void Database::ParseUserInput(std::string data, int UserSocket)
 {
 	std::string args;
@@ -442,7 +456,7 @@ void Database::ParseUserInput(std::string data, int UserSocket)
 
 void ERR_NOSUCHNICK(std::string username, std::string target, int UserSocket)
 {
-	std::string output = ":irc.1337.com 401 " + username + " " + target + " :No such nick/channel\n";
+	std::string output = ":irc.1337.com 401 " + username + " " + target + " :No such nick\n";
 	send(UserSocket, output.c_str(), output.length(), 0);
 }
 
@@ -571,7 +585,7 @@ void Database::PrintChannels()
 
 std::string Database::GetUserBySocket(int UserSocket)
 {
-	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
+	for (SYSTEM_CLIENT::iterator it = this->clients.begin(); it != this->clients.end(); ++it)
 	{
 		if (it->second->GetSocket() == UserSocket)
 			return it->first;
@@ -581,6 +595,8 @@ std::string Database::GetUserBySocket(int UserSocket)
 
 int Database::GetUserSocket(std::string name)
 {
+	if (name.size() == 0)
+		return undefine;
 	for (SYSTEM_CLIENT::iterator it = clients.begin(); it != clients.end(); ++it)
 	{
 		if (it->first == name)
@@ -764,11 +780,15 @@ void	Database::HandleInvite(std::string data, int UserSocket)
 	std::string command, username, C_N, target;
 
 	std::stringstream ss(data);
-	ss >> command >> C_N >> target;
+	ss >> command >> target >> C_N;
+	if (target.empty() || C_N.empty()) {
+		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
+		return ;
+	}
 	username = GetUserBySocket(UserSocket);
 
 	std::string channelName(C_N);
-	if (channelName[0] == '\0') {
+	if (channelName.size() == 0) {
 		ERR_461_NEEDMOREPARAMS(username, command, UserSocket);
 		return ;
 	}
@@ -914,7 +934,7 @@ void	Database::HandleBot(std::string data, int UserSocket) {
 	else if (arg == "INVITE" || arg == "invite") {
 		std::string reply = ":BOT : The INVITE command is used to invite a user to a channel\n"
 		":BOT : You can use the following syntax :\n"
-		":BOT : INVITE #channel username; where #channel is the name of the channel and username is the name of the user you want to invite\n";
+		":BOT : INVITE username #channel; where username is the name of the user you want to invite and #channel is the name of the channel to be invited to\n";
 		std::string rpl = reply.substr(reply.find_first_not_of('\n'), reply.find_first_of('\n'));
 		while (1) {
 			std::string _data = ":BOT!BOT@" + user->GetClientIP() + " PRIVMSG "+ username + " " + rpl + "\r\n";
@@ -1051,21 +1071,21 @@ void	Database::applyModeChange(char mode, bool addMode, Channel *channel, std::s
 			break;
 		case 'k':
 			if (channel->setKey(m_args, addMode, UserName)) {
-			if (addMode)
-				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +k " + GetUserBySocket(TargetSocket) + "\r\n";
-			else
-				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -k " + GetUserBySocket(TargetSocket) + "\r\n";
-			channel->BroadCastMessage(broadcast);
+				if (addMode)
+					broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +k " + GetUserBySocket(TargetSocket) + "\r\n";
+				else
+					broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -k " + GetUserBySocket(TargetSocket) + "\r\n";
+				channel->BroadCastMessage(broadcast);
 			}
 			break;
 		case 'o':
-			TargetSocket = GetUserSocket(m_args[0]);
 			if (channel->SetOperator(UserName, addMode, m_args)) {
-			if (addMode)
-				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +o " + GetUserBySocket(TargetSocket) + "\r\n";
-			else
-				broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -o " + GetUserBySocket(TargetSocket) + "\r\n";
-			channel->BroadCastMessage(broadcast);
+				TargetSocket = GetUserSocket(m_args[0]);
+				if (addMode)
+					broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " +o " + GetUserBySocket(TargetSocket) + "\r\n";
+				else
+					broadcast = ":" + User->GetNickname() + "!" + User->GetUsername() + "@" + User->GetClientIP() + " MODE " + channel->ChannelName() + " -o " + GetUserBySocket(TargetSocket) + "\r\n";
+				channel->BroadCastMessage(broadcast);
 			}
 			break;
 		case 's':

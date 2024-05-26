@@ -142,6 +142,7 @@ class Database
 
 		void SetServerSocket(int socket);
 		void CloseServer(void);
+		void printusers();
 
 		// ------------ ERROR AND REPLY HANDLING ------------
 
